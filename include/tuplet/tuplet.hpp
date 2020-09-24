@@ -59,12 +59,58 @@ struct unwrap_type<std::reference_wrapper<T>> {
 };
 template<class T>
 using unwrap_t = typename unwrap_type<T>::type;
+
+template<size_t... I, class Dest, class... T>
+void assign(Dest& dest, std::index_sequence<I...>, T&&... elems) {
+    ((void)(dest[index<I>()] = std::forward<T>(elems)) , ...);
+}
+template<class Product, class Source, size_t... I>
+Product convert(Source&& source, std::index_sequence<I...>) {
+    return Product{std::forward<Source>(source)[index<I>()]... };
+}
+template<class Func, class Tuple, size_t... I>
+decltype(auto) apply(Tuple&& t, Func&& func, std::index_sequence<I...>) {
+    return std::forward<Func>(func)(t[index<I>()] ...);
+}
 }
 
 template<class... T>
 struct tuple : detail::partial_tuple<0, T...> {
+   private:
+    constexpr static size_t N = sizeof...(T);
+    constexpr static auto indicies = std::make_index_sequence<N>();
+   public:
     using detail::partial_tuple<0, T...>::operator[];
     using detail::partial_tuple<0, T...>::decl_elem;
+
+    template<class... U>
+    void assign(U&&... values) {
+        detail::assign(*this, indicies, std::forward<U>(values)...);
+    }
+    template<class F>
+    decltype(auto) apply(F&& func) & {
+        return detail::apply(*this, std::forward<F>(func), indicies);
+    }
+    template<class F>
+    decltype(auto) apply(F&& func) const& {
+        return detail::apply(*this, std::forward<F>(func), indicies);
+    }
+    template<class F>
+    decltype(auto) apply(F&& func) && {
+        return detail::apply(std::move(*this), std::forward<F>(func), indicies);
+    }
+    template<class... U>
+    operator tuple<U...>() & {
+        return convert(*this, indicies);
+    }
+    template<class... U>
+    operator tuple<U...>() const & {
+        return convert(*this, indicies);
+    }
+    template<class... U>
+    operator tuple<U...>() && {
+        return convert(std::move(*this), indicies);
+    }
 };
 template<class... T>
 tuple(T...) -> tuple<detail::unwrap_t<T>...>;
