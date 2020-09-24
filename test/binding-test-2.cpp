@@ -3,7 +3,13 @@
 #include <tuplet/tuplet.hpp>
 
 int main() {
-    auto tup = tuplet::tuple{1, 2, std::string("Hello, world!")};
+    auto tup = tuplet::tuple{0, 0, std::string()};
+
+    auto& [a, b, c] = tup;
+
+    a = 1;
+    b = 2;
+    c = "Hello, world!";
 
     printf("tup = (%i, %i, \"%s\")\n\n",
         get<0>(tup),
