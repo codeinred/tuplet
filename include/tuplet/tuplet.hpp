@@ -132,6 +132,36 @@ template<class... T>
 tuple<T&...> tie(T&... args) {
     return tuple<T&...>{args...};
 }
+
+namespace literals {
+template<char... digits>
+constexpr size_t from_digits() {
+    size_t num = 0;
+    constexpr bool digits_good = (('0' <= digits && digits <= '9') && ...);
+    static_assert(digits_good, "Must be integral literal");
+    return ((num = num * 10 + (digits - '0')) , ... , num);
+}
+template<char... digits>
+constexpr auto operator""_tag() -> index<from_digits<digits...>()> {
+    return {};
+}
+template<char... digits>
+constexpr auto operator""_st() -> index<from_digits<digits...>()> {
+    return {};
+}
+template<char... digits>
+constexpr auto operator""_nd() -> index<from_digits<digits...>()> {
+    return {};
+}
+template<char... digits>
+constexpr auto operator""_rd() -> index<from_digits<digits...>()> {
+    return {};
+}
+template<char... digits>
+constexpr auto operator""_th() -> index<from_digits<digits...>()> {
+    return {};
+}
+}
 }
 
 namespace std {
