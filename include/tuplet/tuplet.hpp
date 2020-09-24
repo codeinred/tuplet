@@ -81,6 +81,11 @@ template<size_t I, class... T>
 decltype(auto) get(tuple<T...>&& tup) {
     return std::move(tup)[index<I>()];
 }
+
+template<class... T>
+tuple<T&...> tie(T&... args) {
+    return tuple<T&...>{args...};
+}
 }
 
 namespace std {
