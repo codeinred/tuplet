@@ -15,8 +15,5 @@ int main() {
     b = 2;
     c = "Hello, world!";
 
-    return !is_good(
-        get<0>(tup),
-        get<1>(tup),
-        get<2>(tup));
+    return !is_good(get<0>(tup), get<1>(tup), get<2>(tup));
 }

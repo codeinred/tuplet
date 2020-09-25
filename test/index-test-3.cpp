@@ -1,6 +1,6 @@
 #include <cstdio>
-#include <string>
 #include <memory>
+#include <string>
 #include <tuplet/tuplet.hpp>
 
 bool is_good(int a, int b, std::string c) {
@@ -9,14 +9,21 @@ bool is_good(int a, int b, std::string c) {
 
 int main() {
     using namespace tuplet::literals;
-    auto tup = tuplet::tuple{1, std::make_unique<int>(2), std::string("Hello, world!")};
+    auto tup = tuplet::tuple{
+        1, std::make_unique<int>(2), std::string("Hello, world!")};
 
-    static_assert(std::is_same_v<std::tuple_element_t<0 , decltype(tup)>, int>, "Expected int& at element 0");
-    static_assert(std::is_same_v<std::tuple_element_t<1 , decltype(tup)>, std::unique_ptr<int>>, "Expected int& at element 1");
-    static_assert(std::is_same_v<std::tuple_element_t<2 , decltype(tup)>, std::string>, "Expected std::string& at element 2");
+    static_assert(std::is_same_v<std::tuple_element_t<0, decltype(tup)>, int>,
+                  "Expected int& at element 0");
+    static_assert(std::is_same_v<std::tuple_element_t<1, decltype(tup)>,
+                                 std::unique_ptr<int>>,
+                  "Expected int& at element 1");
+    static_assert(
+        std::is_same_v<std::tuple_element_t<2, decltype(tup)>, std::string>,
+        "Expected std::string& at element 2");
 
     auto a = tup[0_th];
-    auto b = std::move(tup)[1_st]; // Check that when a tuple is moved, the indicies are moved too
+    auto b = std::move(tup)[1_st]; // Check that when a tuple is moved, the
+                                   // indicies are moved too
     auto c = tup[2_nd];
     return !is_good(a, *b, c);
 }

@@ -1,6 +1,6 @@
 #include <cstdio>
-#include <string>
 #include <memory>
+#include <string>
 #include <tuplet/tuplet.hpp>
 
 bool is_good(int a, int b, std::string c) {
@@ -8,7 +8,8 @@ bool is_good(int a, int b, std::string c) {
 }
 
 int main() {
-    auto tup = tuplet::tuple{1, std::make_unique<int>(2) , std::string("Hello, world!")};
+    auto tup = tuplet::tuple{
+        1, std::make_unique<int>(2), std::string("Hello, world!")};
 
     // Check that moving a tuple moves the elements when
     // doing a structured bind

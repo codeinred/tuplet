@@ -17,8 +17,5 @@ int main() {
     tup1[1_st] = 2;
     tup1[2_nd] = "Hello, world!";
 
-    return !is_good(
-        get<0>(tup),
-        get<1>(tup),
-        get<2>(tup));
+    return !is_good(get<0>(tup), get<1>(tup), get<2>(tup));
 }
