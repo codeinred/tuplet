@@ -8,7 +8,6 @@ class reference_wrapper;
 }
 
 namespace tuplet {
-
 template <size_t I>
 using index = std::integral_constant<size_t, I>;
 
@@ -25,7 +24,7 @@ struct tuple_elem {
 };
 
 template <size_t I, class... T>
-struct partial_tuple;
+struct partial_tuple {}; // Represents an empty tuple
 
 template <size_t I, class T>
 struct partial_tuple<I, T> : tuple_elem<I, T> {
@@ -54,8 +53,14 @@ template <class T>
 using unwrap_t = typename unwrap_type<T>::type;
 
 template <size_t... I, class Dest, class... T>
-void assign(Dest& dest, std::index_sequence<I...>, T&&... elems) {
-    ((void)(dest[index<I>()] = std::forward<T>(elems)), ...);
+Dest& assign(Dest& dest, std::index_sequence<I...>, T&&... elems) {
+    return ((void)(dest[index<I>()] = std::forward<T>(elems)), ..., dest);
+}
+template <size_t... I, class Dest, class Tup>
+Dest& assign_tuple(Dest& dest, Tup&& tup, std::index_sequence<I...>) {
+    return ((void)(dest[index<I>()] = std::forward<Tup>(tup)[index<I>()]),
+            ...,
+            dest);
 }
 template <class Product, class Source, size_t... I>
 Product convert(Source&& source, std::index_sequence<I...>) {
@@ -73,6 +78,14 @@ struct tuple : detail::partial_tuple<0, T...> {
     using detail::partial_tuple<0, T...>::operator[];
     using detail::partial_tuple<0, T...>::decl_elem;
 
+    template <class... U>
+    tuple& operator=(tuple<U...> const& tup) {
+        return assign_tuple(*this, tup, indicies);
+    }
+    template <class... U>
+    tuple& operator=(tuple<U...>&& tup) {
+        return assign_tuple(*this, std::move(tup), indicies);
+    }
     template <class... U>
     void assign(U&&... values) {
         detail::assign(*this, indicies, std::forward<U>(values)...);
@@ -104,24 +117,15 @@ struct tuple : detail::partial_tuple<0, T...> {
 };
 template <class... T>
 tuple(T...) -> tuple<detail::unwrap_t<T>...>;
+// clang-format off
+template <size_t I, class... T>
+decltype(auto) get(tuple<T...>& tup) { return tup[index<I>()]; }
+template <size_t I, class... T>
+decltype(auto) get(tuple<T...> const& tup) { return tup[index<I>()]; }
+template <size_t I, class... T>
+decltype(auto) get(tuple<T...>&& tup) { return std::move(tup)[index<I>()]; }
 
-template <size_t I, class... T>
-decltype(auto) get(tuple<T...>& tup) {
-    return tup[index<I>()];
-}
-template <size_t I, class... T>
-decltype(auto) get(tuple<T...> const& tup) {
-    return tup[index<I>()];
-}
-template <size_t I, class... T>
-decltype(auto) get(tuple<T...>&& tup) {
-    return std::move(tup)[index<I>()];
-}
-
-template <class... T>
-tuple<T&...> tie(T&... args) {
-    return tuple<T&...>{args...};
-}
+template <class... T> tuple<T&...> tie(T&... args) { return {args...}; }
 
 namespace literals {
 template <char... D>
@@ -130,28 +134,13 @@ constexpr size_t size_t_from_digits() {
     size_t num = 0;
     return ((num = num * 10 + (D - '0')), ..., num);
 }
-template <char... D>
-using index_t = index<size_t_from_digits<D...>()>;
-template <char... D>
-constexpr index_t<D...> operator""_idx() {
-    return {};
-}
-template <char... D>
-constexpr index_t<D...> operator""_st() {
-    return {};
-}
-template <char... D>
-constexpr index_t<D...> operator""_nd() {
-    return {};
-}
-template <char... D>
-constexpr index_t<D...> operator""_rd() {
-    return {};
-}
-template <char... D>
-constexpr index_t<D...> operator""_th() {
-    return {};
-}
+template <char... D> using index_t = index<size_t_from_digits<D...>()>;
+template <char... D> constexpr index_t<D...> operator""_idx() { return {}; }
+template <char... D> constexpr index_t<D...> operator""_st() { return {}; }
+template <char... D> constexpr index_t<D...> operator""_nd() { return {}; }
+template <char... D> constexpr index_t<D...> operator""_rd() { return {}; }
+template <char... D> constexpr index_t<D...> operator""_th() { return {}; }
+// clang-format on
 } // namespace literals
 } // namespace tuplet
 
