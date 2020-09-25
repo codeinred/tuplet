@@ -120,13 +120,25 @@ struct tuple : detail::partial_tuple<0, T...> {
 };
 template <class... T>
 tuple(T...) -> tuple<detail::unwrap_t<T>...>;
+
+template <class First, class Second>
+struct pair {
+    [[no_unique_address]] First  first;
+    [[no_unique_address]] Second second;
+
+    decltype(auto) operator[](index<0>) & { return (first); }
+    decltype(auto) operator[](index<0>) const& { return (first); }
+    decltype(auto) operator[](index<0>) && { return (std::move(*this).first); }
+    decltype(auto) operator[](index<1>) & { return (second); }
+    decltype(auto) operator[](index<1>) const& { return (second); }
+    decltype(auto) operator[](index<1>) && { return (std::move(*this).second); }
+};
+template <class A, class B>
+pair(A, B) -> pair<detail::unwrap_t<A>, detail::unwrap_t<B>>;
+
 // clang-format off
-template <size_t I, class... T>
-decltype(auto) get(tuple<T...>& tup) { return tup[index<I>()]; }
-template <size_t I, class... T>
-decltype(auto) get(tuple<T...> const& tup) { return tup[index<I>()]; }
-template <size_t I, class... T>
-decltype(auto) get(tuple<T...>&& tup) { return std::move(tup)[index<I>()]; }
+template <size_t I, class Tup>
+decltype(auto) get(Tup&& tup) { return std::forward<Tup>(tup)[index<I>()]; }
 
 template <class... T> tuple<T&...> tie(T&... args) { return {args...}; }
 
@@ -155,6 +167,14 @@ struct tuple_size<tuplet::tuple<T...>>
 template <size_t I, class... T>
 struct tuple_element<I, tuplet::tuple<T...>> {
     using type = decltype(tuplet::tuple<T...>::decl_elem(tuplet::index<I>()));
+};
+template <class A, class B>
+struct tuple_size<tuplet::pair<A, B>> : std::integral_constant<size_t, 2> {};
+
+template <size_t I, class A, class B>
+struct tuple_element<I, tuplet::pair<A, B>> {
+    static_assert(I < 2, "tuplet::pair only has 2 elements");
+    using type = std::conditional_t<I == 0, A, B>;
 };
 } // namespace std
 #endif
