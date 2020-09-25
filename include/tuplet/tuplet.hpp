@@ -143,7 +143,7 @@ tuple(T...) -> tuple<detail::unwrap_t<T>...>;
 
 template <class First, class Second>
 struct pair {
-    constexpr static indexes<0, 1> indicies;
+    constexpr static indexes<0, 1> indicies{};
     [[no_unique_address]] First    first;
     [[no_unique_address]] Second   second;
 
