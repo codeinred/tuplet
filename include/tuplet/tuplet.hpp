@@ -1,4 +1,6 @@
-#pragma once
+#ifndef TUPLET_TUPLET_HPP_IMPLEMENTATION
+#define TUPLET_TUPLET_HPP_IMPLEMENTATION
+
 #include <cstddef>
 #include <type_traits>
 #include <utility>
@@ -155,3 +157,4 @@ struct tuple_element<I, tuplet::tuple<T...>> {
     using type = decltype(tuplet::tuple<T...>::decl_elem(tuplet::index<I>()));
 };
 } // namespace std
+#endif
