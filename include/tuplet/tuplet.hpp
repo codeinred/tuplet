@@ -11,8 +11,36 @@ class reference_wrapper;
 }
 
 namespace tuplet {
+template <class T, class U>
+concept other_than = !std::is_same_v<std::decay_t<T>, U>;
+
 template <size_t I>
 using index = std::integral_constant<size_t, I>;
+
+template <size_t... I>
+using indexes = std::index_sequence<I...>;
+
+template <class Tuple>
+constexpr auto indicies =
+    std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>();
+
+template <class T>
+concept empty_type = std::is_empty_v<T>;
+
+template <class T>
+concept indexable = empty_type<T> || requires(T t) {
+    t[index<0>()];
+};
+
+template <class T>
+concept tuple_type = indexable<T> || requires(T t) {
+    std::get<0>(t);
+};
+
+template <class U, class T>
+concept assignable_to = requires(U u, T t) {
+    t = u;
+};
 
 namespace detail {
 template <size_t I, class T>
@@ -21,9 +49,11 @@ struct tuple_elem {
 
     [[no_unique_address]] T elem;
 
-    decltype(auto) operator[](index<I>) & { return (elem); }
-    decltype(auto) operator[](index<I>) const& { return (elem); }
-    decltype(auto) operator[](index<I>) && { return (std::move(*this).elem); }
+    constexpr decltype(auto) operator[](index<I>) & { return (elem); }
+    constexpr decltype(auto) operator[](index<I>) const& { return (elem); }
+    constexpr decltype(auto) operator[](index<I>) && {
+        return (std::move(*this).elem);
+    }
 };
 
 template <size_t I, class... T>
@@ -56,24 +86,29 @@ template <class T>
 using unwrap_t = typename unwrap_type<T>::type;
 
 template <size_t... I, class Dest, class... T>
-Dest& assign(Dest& dest, std::index_sequence<I...>, T&&... elems) {
+constexpr Dest& assign_impl(Dest& dest, indexes<I...>, T&&... elems) {
     return ((void)(dest[index<I>()] = std::forward<T>(elems)), ..., dest);
 }
 template <size_t... I, class Dest, class Tup>
-Dest& assign_tuple(Dest& dest, Tup&& tup, std::index_sequence<I...>) {
-    return ((void)(dest[index<I>()] = std::forward<Tup>(tup)[index<I>()]),
-            ...,
-            dest);
+constexpr Dest& assign_tuple(Dest& dest, Tup&& tup, indexes<I...>) {
+    return (
+        (void)(dest[index<I>()] = get<I>(std::forward<Tup>(tup))), ..., dest);
 }
 template <class Product, class Source, size_t... I>
-Product convert(Source&& source, std::index_sequence<I...>) {
+constexpr Product convert_impl(Source&& source, indexes<I...>) {
     return Product{std::forward<Source>(source)[index<I>()]...};
 }
-template <class Func, class Tuple, size_t... I>
-decltype(auto) apply(Tuple&& t, Func&& func, std::index_sequence<I...>) {
-    return std::forward<Func>(func)(t[index<I>()]...);
+template <class F, class Tuple, size_t... I>
+constexpr decltype(auto) apply_impl(F&& func, Tuple&& tup, indexes<I...>) {
+    return std::forward<F>(func)(std::forward<Tuple>(tup)[index<I>()]...);
 }
 } // namespace detail
+
+template <class F, indexable Tuple>
+constexpr decltype(auto) apply(F&& func, Tuple&& tup) {
+    return detail::apply_impl(
+        std::forward<F>(func), std::forward<Tuple>(tup), indicies<Tuple>);
+}
 
 template <class... T>
 struct tuple : detail::partial_tuple<0, T...> {
@@ -81,41 +116,26 @@ struct tuple : detail::partial_tuple<0, T...> {
     using detail::partial_tuple<0, T...>::operator[];
     using detail::partial_tuple<0, T...>::decl_elem;
 
-    template <class... U>
-    tuple& operator=(tuple<U...> const& tup) {
-        return assign_tuple(*this, tup, indicies);
+    template <other_than<tuple> Type> // Preserves default assignments
+    constexpr auto& operator=(Type&& tup) {
+        return assign_tuple(*this, std::forward<Type>(tup), indicies);
     }
-    template <class... U>
-    tuple& operator=(tuple<U...>&& tup) {
-        return assign_tuple(*this, std::move(tup), indicies);
+
+    template <assignable_to<T>... U>
+    constexpr auto& assign(U&&... values) {
+        return detail::assign_impl(*this, indicies, std::forward<U>(values)...);
     }
-    template <class... U>
-    void assign(U&&... values) {
-        detail::assign(*this, indicies, std::forward<U>(values)...);
+    template <class Aggregate>
+    constexpr operator Aggregate() & {
+        return detail::convert_impl<Aggregate>(*this, indicies);
     }
-    template <class F>
-    decltype(auto) apply(F&& func) & {
-        return detail::apply(*this, std::forward<F>(func), indicies);
+    template <class Aggregate>
+    constexpr operator Aggregate() const& {
+        return detail::convert_impl<Aggregate>(*this, indicies);
     }
-    template <class F>
-    decltype(auto) apply(F&& func) const& {
-        return detail::apply(*this, std::forward<F>(func), indicies);
-    }
-    template <class F>
-    decltype(auto) apply(F&& func) && {
-        return detail::apply(std::move(*this), std::forward<F>(func), indicies);
-    }
-    template <class... U>
-    operator tuple<U...>() & {
-        return detail::convert<tuple<U...>>(*this, indicies);
-    }
-    template <class... U>
-    operator tuple<U...>() const& {
-        return detail::convert<tuple<U...>>(*this, indicies);
-    }
-    template <class... U>
-    operator tuple<U...>() && {
-        return detail::convert<tuple<U...>>(std::move(*this), indicies);
+    template <class Aggregate>
+    constexpr operator Aggregate() && {
+        return detail::convert_impl<Aggregate>(std::move(*this), indicies);
     }
 };
 template <class... T>
@@ -123,21 +143,50 @@ tuple(T...) -> tuple<detail::unwrap_t<T>...>;
 
 template <class First, class Second>
 struct pair {
-    [[no_unique_address]] First  first;
-    [[no_unique_address]] Second second;
+    constexpr static indexes<0, 1> indicies;
+    [[no_unique_address]] First    first;
+    [[no_unique_address]] Second   second;
 
-    decltype(auto) operator[](index<0>) & { return (first); }
-    decltype(auto) operator[](index<0>) const& { return (first); }
-    decltype(auto) operator[](index<0>) && { return (std::move(*this).first); }
-    decltype(auto) operator[](index<1>) & { return (second); }
-    decltype(auto) operator[](index<1>) const& { return (second); }
-    decltype(auto) operator[](index<1>) && { return (std::move(*this).second); }
+    constexpr decltype(auto) operator[](index<0>) & { return (first); }
+    constexpr decltype(auto) operator[](index<0>) const& { return (first); }
+    constexpr decltype(auto) operator[](index<0>) && {
+        return (std::move(*this).first);
+    }
+    constexpr decltype(auto) operator[](index<1>) & { return (second); }
+    constexpr decltype(auto) operator[](index<1>) const& { return (second); }
+    constexpr decltype(auto) operator[](index<1>) && {
+        return (std::move(*this).second);
+    }
+
+    template <other_than<pair> Type> // Preserves default assignments
+    constexpr auto& operator=(Type&& tup) {
+        return assign_tuple(*this, std::forward<Type>(tup), indicies);
+    }
+
+    template<assignable_to<First> F2, assignable_to<Second> S2>
+    constexpr auto& assign(F2&& f, S2&& s) {
+        first = std::forward<F2>(f);
+        second = std::forward<S2>(s);
+        return *this;
+    }
+    template <class Aggregate>
+    constexpr operator Aggregate() & {
+        return detail::convert_impl<Aggregate>(*this, indicies);
+    }
+    template <class Aggregate>
+    constexpr operator Aggregate() const& {
+        return detail::convert_impl<Aggregate>(*this, indicies);
+    }
+    template <class Aggregate>
+    constexpr operator Aggregate() && {
+        return detail::convert_impl<Aggregate>(std::move(*this), indicies);
+    }
 };
 template <class A, class B>
 pair(A, B) -> pair<detail::unwrap_t<A>, detail::unwrap_t<B>>;
 
 // clang-format off
-template <size_t I, class Tup>
+template <size_t I, indexable Tup>
 decltype(auto) get(Tup&& tup) { return std::forward<Tup>(tup)[index<I>()]; }
 
 template <class... T> tuple<T&...> tie(T&... args) { return {args...}; }
