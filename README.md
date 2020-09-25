@@ -21,7 +21,7 @@ implementation of `std::tuple`.
 
 ## Usage
 
-Creating a tuple is pretty straight-forward. Writing
+Creating a tuple is as simple as `1, 2, "Hello, world"`! Writing
 ```cpp
 tuplet::tuple tup = {1, 2, std::string("Hello, world!")};
 ```
@@ -30,9 +30,9 @@ expect it to. This is all you need to get started, but the following
 sections will expand upon the functionality provided by **tuplet** in greater
 depth.
 
-### Member Access
+### Access members with *get()* or the index operator
 
-You can access members via `get` or via `operator[]` with an index:
+You can access members via `get`:
 ```cpp
 std::cout << get<2>(tup) << std::endl; // Prints "Hello, world!"
 ```
@@ -49,18 +49,7 @@ template <size_t I>
 using index = std::integral_constant<size_t, I>;
 ```
 
-#### **tuplet** supports Structured Bindings
-
-The tuple can also be accessed via a structured binding:
-```cpp
-// a binds to get<0>(tup),
-// b binds to get<1>(tup), and
-// c binds to get<2>(tup)
-auto& [a, b, c] = tup;
-
-std::cout << c << std::endl; // Print "Hello, world!"
-```
-#### Index Literals for clean, easy access
+### Use Index Literals for Clean, Easy Access
 You can access elements of a tuple very cleanly by using the literals
 provided in `tuplet::literals`! This namespace defines the literal
 operators `_st`,`_nd`, `_rd`, and `_th`, which take
@@ -81,7 +70,19 @@ You don't need to match the ending. These literals are defined on a
 numeric literal operator template, so any number works for them. `999999_th`
 will give you `tuplet::index<999999>`.
 
-### Tie values together with `tuplet::tie`
+### Decompose tuples via Structured Bindings
+
+The tuple can also be accessed via a structured binding:
+```cpp
+// a binds to get<0>(tup),
+// b binds to get<1>(tup), and
+// c binds to get<2>(tup)
+auto& [a, b, c] = tup;
+
+std::cout << c << std::endl; // Print "Hello, world!"
+```
+
+### Tie values together with *tuplet::tie()*
 
 You can create a tuple of references with `tuplet::tie`! This function
 acts just like `std::tie` does:
@@ -101,8 +102,7 @@ tup = tuplet::tuple{1, 2, "Hello, world!"};
 std::cout << s << std::endl; // Prints Hello World
 ```
 
-### Assign values via `tuple.assign(values...)`
-
+### Assign Values via *tuple.assign()*
 It's possible to easily and efficently assign values to a tuple using
 the `.assign()` method:
 ```cpp
@@ -110,7 +110,8 @@ tuplet::tuple<int, int, std::string> tup;
 
 tup.assign(1, 2, "Hello, world!");
 ```
-### Store a reference with std::ref
+
+### Store references using *std::ref()*
 
 You can use `std::ref` to store references inside a tuple!
 ```cpp
@@ -133,3 +134,16 @@ These methods are equivilant, but the one with `std::ref` can result
 in cleaner and shorter code, so the template deduction guide accounts
 for it.
 
+### Use elements as function args with *tuplet::apply()*
+
+As with `std::apply`, you can use `tuplet::apply` to use the elements
+of a tuple as arguments of a function, like so:
+
+```cpp
+// Prints arguments on successive lines
+auto print = [](auto&... args) {
+    ((std::cout << args << '\n') , ...);
+};
+
+apply(print, tuplet::tuple{1, 2, "Hello, world!"});
+```
