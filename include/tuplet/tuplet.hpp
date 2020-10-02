@@ -7,7 +7,17 @@
 
 namespace tuplet {
 template <class T, class U>
+concept same_as = std::is_same_v<T, U> && std::is_same_v<U, T>;
+
+template <class T, class U>
 concept other_than = !std::is_same_v<std::decay_t<T>, U>;
+
+template <class Wrapper>
+concept wrapper = requires(Wrapper w) {
+    typename Wrapper::type;
+    { w.get() } -> same_as<typename Wrapper::type&>;
+    (typename Wrapper::type&)(w);
+};
 
 template <size_t I>
 using index = std::integral_constant<size_t, I>;
@@ -50,7 +60,14 @@ struct tuple_elem {
         return (std::move(*this).elem);
     }
 };
+template<class A, class... T>
+struct tuple_base;
 
+template <size_t... I, class... T>
+struct tuple_base<std::index_sequence<I...>, T...> : tuple_elem<I, T>... {
+    using tuple_elem<I, T>::operator[]...;
+    using tuple_elem<I, T>::decl_elem...;
+};
 template <size_t I, class... T>
 struct partial_tuple {}; // Represents an empty tuple
 
@@ -68,6 +85,17 @@ struct partial_tuple<I, T, Rest...> : tuple_elem<I, T>,
     using partial_tuple<I + 1, Rest...>::decl_elem;
     using partial_tuple<I + 1, Rest...>::operator[];
 };
+
+template <class T>
+struct unwrap_type {
+    using type = T;
+};
+template <wrapper T>
+struct unwrap_type<T> {
+    using type = typename T::type&;
+};
+template <class T>
+using unwrap_t = typename unwrap_type<T>::type;
 
 template <size_t... I, class Dest, class... T>
 constexpr Dest& assign_impl(Dest& dest, indexes<I...>, T&&... elems) {
@@ -95,10 +123,11 @@ constexpr decltype(auto) apply(F&& func, Tuple&& tup) {
 }
 
 template <class... T>
-struct tuple : detail::partial_tuple<0, T...> {
+struct tuple : detail::tuple_base<std::make_index_sequence<sizeof...(T)>, T...> {
+    using indicies_t = std::make_index_sequence<sizeof...(T)>;
     constexpr static auto indicies = std::make_index_sequence<sizeof...(T)>();
-    using detail::partial_tuple<0, T...>::operator[];
-    using detail::partial_tuple<0, T...>::decl_elem;
+    using detail::tuple_base<indicies_t, T...>::operator[];
+    using detail::tuple_base<indicies_t, T...>::decl_elem;
 
     template <other_than<tuple> Type> // Preserves default assignments
     constexpr auto& operator=(Type&& tup) {
@@ -123,7 +152,7 @@ struct tuple : detail::partial_tuple<0, T...> {
     }
 };
 template <class... T>
-tuple(T...) -> tuple<T...>;
+tuple(T...) -> tuple<detail::unwrap_t<T>...>;
 
 template <class First, class Second>
 struct pair {
@@ -167,7 +196,7 @@ struct pair {
     }
 };
 template <class A, class B>
-pair(A, B) -> pair<A, B>;
+pair(A, B) -> pair<detail::unwrap_t<A>, detail::unwrap_t<B>>;
 
 // clang-format off
 template <size_t I, indexable Tup>
