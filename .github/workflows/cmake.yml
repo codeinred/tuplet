@@ -1,0 +1,132 @@
+name: CMake
+
+on: [push]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    # See: https://docs.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow#configuring-a-build-matrix
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [
+          ubuntu-latest-gcc-10-debug,
+          ubuntu-latest-clang-10-debug,
+          ubuntu-latest-gcc-10-release,
+          ubuntu-latest-clang-10-release,
+          ubuntu-latest-clang-10-debug-libc++,
+          ubuntu-latest-clang-10-release-libc++,
+          windows-2019-cl-debug,
+          windows-2019-cl-release
+        ]
+
+        include:
+          - name: ubuntu-latest-gcc-10-debug
+            os: ubuntu-latest
+            compiler: g++-10
+            flags: ""
+            build_type: Debug
+            install_compiler: sudo apt install g++-10
+
+          - name: ubuntu-latest-clang-10-debug
+            os: ubuntu-latest
+            compiler: clang++-10
+            flags: ""
+            build_type: Debug
+            install_compiler: sudo apt install g++-10 && sudo apt install clang-10
+
+          - name: ubuntu-latest-gcc-10-release
+            os: ubuntu-latest
+            compiler: g++-10
+            flags: ""
+            build_type: Release
+            install_compiler: sudo apt install g++-10
+
+          - name: ubuntu-latest-clang-10-release
+            os: ubuntu-latest
+            compiler: clang++-10
+            flags: ""
+            build_type: Release
+            install_compiler: sudo apt install g++-10 && sudo apt install clang-10
+
+          - name: ubuntu-latest-clang-10-debug-libc++
+            os: ubuntu-latest
+            compiler: $HOME/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04/bin/clang++
+            flags: "-stdlib=libc++"
+            build_type: Debug
+            install_compiler: "cd $HOME \
+              && wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
+              && tar -xvf clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz"
+
+          - name: ubuntu-latest-clang-10-release-libc++
+            os: ubuntu-latest
+            compiler: $HOME/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04/bin/clang++
+            flags: "-stdlib=libc++"
+            build_type: Release
+            install_compiler: "cd $HOME \
+              && wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
+              && tar -xvf clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz"
+
+          - name: windows-2019-cl-debug
+            os: windows-2019
+            compiler: cl
+            flags: ""
+            build_type: Debug
+            install_compiler: ""
+
+          - name: windows-2019-cl-release
+            os: windows-2019
+            compiler: cl
+            flags: ""
+            build_type: Release
+            install_compiler: ""
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure Build Environment
+      shell: bash
+      run: ${{ matrix.install_compiler }}
+
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      # Note the current convention is to use the -S and -B options here to specify source
+      # and build directories, but this is only available with CMake 3.13 and higher.
+      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_CXX_FLAGS=${{ matrix.flags }}
+
+    - name: Upload compile_commands.json
+      uses: actions/upload-artifact@v2
+      with:
+        name: "${{matrix.name}} compile_commands.json"
+        path: ${{runner.workspace}}/build/compile_commands.json
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the build.  You can specify a specific target with "--target <NAME>"
+      run: cmake --build . --config ${{ matrix.build_type }}
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute tests defined by the CMake configuration.
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: ctest -V -C ${{ matrix.build_type }}
