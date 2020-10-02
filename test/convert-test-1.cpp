@@ -11,7 +11,7 @@ int main() {
 
     auto tup1 = tuplet::tuple{0, 0, std::string()};
 
-    tuplet::tuple<int&, int&, std::string&> tup = tup1;
+    tuplet::tuple<int&, int&, std::string&> tup = tuplet::convert { tup1 };
 
     tup1[0_th] = 1;
     tup1[1_st] = 2;

@@ -7,7 +7,7 @@
 
 namespace tuplet {
 template <class T, class U>
-concept same_as = std::is_same_v<T, U> && std::is_same_v<U, T>;
+concept same_as = std::is_same_v<T, U>&& std::is_same_v<U, T>;
 
 template <class T, class U>
 concept other_than = !std::is_same_v<std::decay_t<T>, U>;
@@ -15,7 +15,8 @@ concept other_than = !std::is_same_v<std::decay_t<T>, U>;
 template <class Wrapper>
 concept wrapper = requires(Wrapper w) {
     typename Wrapper::type;
-    { w.get() } -> same_as<typename Wrapper::type&>;
+    { w.get() }
+    ->same_as<typename Wrapper::type&>;
     (typename Wrapper::type&)(w);
 };
 
@@ -108,8 +109,8 @@ constexpr decltype(auto) apply(F&& func, Tuple&& tup) {
 template <class... T>
 struct tuple
   : detail::tuple_base<std::make_index_sequence<sizeof...(T)>, T...> {
-    using indicies_t               = std::make_index_sequence<sizeof...(T)>;
-    constexpr static auto indicies = indicies_t();
+    using indicies_t = std::make_index_sequence<sizeof...(T)>;
+    constexpr static auto                       indicies = indicies_t();
     using detail::tuple_base<indicies_t, T...>::operator[];
     using detail::tuple_base<indicies_t, T...>::decl_elem;
 
@@ -121,18 +122,6 @@ struct tuple
     template <assignable_to<T>... U>
     constexpr auto& assign(U&&... values) {
         return detail::assign_impl(*this, indicies, std::forward<U>(values)...);
-    }
-    template <class Aggregate>
-    constexpr operator Aggregate() & {
-        return detail::convert_impl<Aggregate>(*this, indicies);
-    }
-    template <class Aggregate>
-    constexpr operator Aggregate() const& {
-        return detail::convert_impl<Aggregate>(*this, indicies);
-    }
-    template <class Aggregate>
-    constexpr operator Aggregate() && {
-        return detail::convert_impl<Aggregate>(std::move(*this), indicies);
     }
 };
 template <class... T>
@@ -166,21 +155,35 @@ struct pair {
         second = std::forward<S2>(s);
         return *this;
     }
-    template <class Aggregate>
-    constexpr operator Aggregate() & {
-        return detail::convert_impl<Aggregate>(*this, indicies);
-    }
-    template <class Aggregate>
-    constexpr operator Aggregate() const& {
-        return detail::convert_impl<Aggregate>(*this, indicies);
-    }
-    template <class Aggregate>
-    constexpr operator Aggregate() && {
-        return detail::convert_impl<Aggregate>(std::move(*this), indicies);
-    }
 };
 template <class A, class B>
 pair(A, B) -> pair<detail::unwrap_t<A>, detail::unwrap_t<B>>;
+
+// Converts from one tuple type to any other tuple or aggregate
+template <class Tuple>
+struct convert {
+    using indicies_t =
+        std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>;
+    constexpr static indicies_t indicies{};
+    Tuple                       tuple;
+    template <class Aggregate>
+    constexpr operator Aggregate() & {
+        return detail::convert_impl<Aggregate>((tuple), indicies);
+    }
+    template <class Aggregate>
+    constexpr operator Aggregate() const& {
+        return detail::convert_impl<Aggregate>((tuple), indicies);
+    }
+    template <class Aggregate>
+    constexpr operator Aggregate() && {
+        return detail::convert_impl<Aggregate>((std::move(*this).tuple),
+                                               indicies);
+    }
+};
+template <class Tuple>
+convert(Tuple&) -> convert<Tuple&>;
+template <class Tuple>
+convert(Tuple&&) -> convert<Tuple&>;
 
 // clang-format off
 template <size_t I, indexable Tup>
