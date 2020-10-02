@@ -60,30 +60,13 @@ struct tuple_elem {
         return (std::move(*this).elem);
     }
 };
-template<class A, class... T>
+template <class A, class... T>
 struct tuple_base;
 
 template <size_t... I, class... T>
 struct tuple_base<std::index_sequence<I...>, T...> : tuple_elem<I, T>... {
     using tuple_elem<I, T>::operator[]...;
     using tuple_elem<I, T>::decl_elem...;
-};
-template <size_t I, class... T>
-struct partial_tuple {}; // Represents an empty tuple
-
-template <size_t I, class T>
-struct partial_tuple<I, T> : tuple_elem<I, T> {
-    using tuple_elem<I, T>::decl_elem;
-    using tuple_elem<I, T>::operator[];
-};
-
-template <size_t I, class T, class... Rest>
-struct partial_tuple<I, T, Rest...> : tuple_elem<I, T>,
-                                      partial_tuple<I + 1, Rest...> {
-    using tuple_elem<I, T>::decl_elem;
-    using tuple_elem<I, T>::operator[];
-    using partial_tuple<I + 1, Rest...>::decl_elem;
-    using partial_tuple<I + 1, Rest...>::operator[];
 };
 
 template <class T>
@@ -123,9 +106,10 @@ constexpr decltype(auto) apply(F&& func, Tuple&& tup) {
 }
 
 template <class... T>
-struct tuple : detail::tuple_base<std::make_index_sequence<sizeof...(T)>, T...> {
-    using indicies_t = std::make_index_sequence<sizeof...(T)>;
-    constexpr static auto indicies = std::make_index_sequence<sizeof...(T)>();
+struct tuple
+  : detail::tuple_base<std::make_index_sequence<sizeof...(T)>, T...> {
+    using indicies_t               = std::make_index_sequence<sizeof...(T)>;
+    constexpr static auto indicies = indicies_t();
     using detail::tuple_base<indicies_t, T...>::operator[];
     using detail::tuple_base<indicies_t, T...>::decl_elem;
 
@@ -176,9 +160,9 @@ struct pair {
         return assign_tuple(*this, std::forward<Type>(tup), indicies);
     }
 
-    template<assignable_to<First> F2, assignable_to<Second> S2>
+    template <assignable_to<First> F2, assignable_to<Second> S2>
     constexpr auto& assign(F2&& f, S2&& s) {
-        first = std::forward<F2>(f);
+        first  = std::forward<F2>(f);
         second = std::forward<S2>(s);
         return *this;
     }
