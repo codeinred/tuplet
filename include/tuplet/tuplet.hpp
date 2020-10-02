@@ -5,11 +5,6 @@
 #include <type_traits>
 #include <utility>
 
-namespace std {
-template <class T>
-class reference_wrapper;
-}
-
 namespace tuplet {
 template <class T, class U>
 concept other_than = !std::is_same_v<std::decay_t<T>, U>;
@@ -74,17 +69,6 @@ struct partial_tuple<I, T, Rest...> : tuple_elem<I, T>,
     using partial_tuple<I + 1, Rest...>::operator[];
 };
 
-template <class T>
-struct unwrap_type {
-    using type = T;
-};
-template <class T>
-struct unwrap_type<std::reference_wrapper<T>> {
-    using type = T&;
-};
-template <class T>
-using unwrap_t = typename unwrap_type<T>::type;
-
 template <size_t... I, class Dest, class... T>
 constexpr Dest& assign_impl(Dest& dest, indexes<I...>, T&&... elems) {
     return ((void)(dest[index<I>()] = std::forward<T>(elems)), ..., dest);
@@ -139,7 +123,7 @@ struct tuple : detail::partial_tuple<0, T...> {
     }
 };
 template <class... T>
-tuple(T...) -> tuple<detail::unwrap_t<T>...>;
+tuple(T...) -> tuple<T...>;
 
 template <class First, class Second>
 struct pair {
@@ -183,7 +167,7 @@ struct pair {
     }
 };
 template <class A, class B>
-pair(A, B) -> pair<detail::unwrap_t<A>, detail::unwrap_t<B>>;
+pair(A, B) -> pair<A, B>;
 
 // clang-format off
 template <size_t I, indexable Tup>
