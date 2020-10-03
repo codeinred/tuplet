@@ -127,7 +127,7 @@ constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
     return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
 }
 template <class T, class... U, class... B>
-void assign_impl(T&& tup, type_list<B...>, U&&... u) {
+constexpr void assign_impl(T&& tup, type_list<B...>, U&&... u) {
     (void(tup.identity_t<B>::value = std::forward<U>(u)), ...);
 }
 template <char... D>
@@ -174,11 +174,11 @@ struct tuple : tuple_base_t<T...> {
 
    private:
     template <class U, class... B1, class... B2>
-    void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
+    constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
         (void(B1::value = std::forward<U>(u).identity_t<B2>::value), ...);
     }
     template <class U, size_t... I>
-    void eq_impl(U&& u, std::index_sequence<I...>) {
+    constexpr void eq_impl(U&& u, std::index_sequence<I...>) {
         (void(tuple_elem<I, T>::value = get<I>(std::forward<U>(u))), ...);
     }
 };
@@ -251,12 +251,12 @@ convert(Tuple &&) -> convert<Tuple&>;
 // tuplet::apply implementation
 namespace tuplet {
 template <size_t I, indexable Tup>
-decltype(auto) get(Tup&& tup) {
+constexpr decltype(auto) get(Tup&& tup) {
     return std::forward<Tup>(tup)[tag<I>()];
 }
 
 template <class... T>
-tuple<T&...> tie(T&... t) {
+constexpr tuple<T&...> tie(T&... t) {
     return {t...};
 }
 
