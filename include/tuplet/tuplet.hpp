@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <utility>
 
-// tuplet type traits & concepts
+// tuplet convenience types
 namespace tuplet {
 template <class T>
 using identity_t = T;
@@ -52,7 +52,7 @@ concept indexable = empty_type<T> || requires(T t) {
 
 template <class T>
 concept tuple_type = indexable<T> || requires(T t) {
-    std::get<0>(t);
+    get<0>(t);
 };
 
 template <class U, class T>
@@ -106,7 +106,9 @@ using deduce_elem_t = typename deduce_elem<T>::type;
 
 // tuplet::detail::get_tuple_base implementation
 // tuplet::detail::convert_impl
-
+// tuplet::detail::apply_impl
+// tuplet::detail::assign_impl
+// tuplet::detail::size_t_from_digits
 namespace tuplet::detail {
 template <class A, class... T>
 struct get_tuple_base;
@@ -128,8 +130,15 @@ template <class T, class... U, class... B>
 void assign_impl(T&& tup, type_list<B...>, U&&... u) {
     (void(tup.identity_t<B>::value = std::forward<U>(u)), ...);
 }
+template <char... D>
+constexpr size_t size_t_from_digits() {
+    static_assert((('0' <= D && D <= '9') && ...), "Must be integral literal");
+    size_t num = 0;
+    return ((num = num * 10 + (D - '0')), ..., num);
+}
 } // namespace tuplet::detail
 
+// tuplet::tuple implementation
 namespace tuplet {
 template <class... T>
 using tuple_base_t =
@@ -164,9 +173,9 @@ struct tuple : tuple_base_t<T...> {
     }
 
    private:
-    template <class Tuple, class... B1, class... B2>
-    void eq_impl(Tuple&& t, type_list<B1...>, type_list<B2...>) {
-        (void(B1::value = t.identity_t<B2>::value), ...);
+    template <class U, class... B1, class... B2>
+    void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
+        (void(B1::value = std::forward<U>(u).identity_t<B2>::value), ...);
     }
     template <class U, size_t... I>
     void eq_impl(U&& u, std::index_sequence<I...>) {
@@ -177,6 +186,7 @@ template <class... T>
 tuple(T...) -> tuple<deduce_elem_t<T>...>;
 } // namespace tuplet
 
+// tuplet::pair implementation
 namespace tuplet {
 template <class First, class Second>
 struct pair {
@@ -214,6 +224,7 @@ template <class A, class B>
 pair(A, B) -> pair<deduce_elem_t<A>, deduce_elem_t<B>>;
 } // namespace tuplet
 
+// tuplet::convert implementation
 namespace tuplet {
 // Converts from one tuple type to any other tuple or U
 template <class Tuple>
@@ -235,6 +246,9 @@ template <class Tuple>
 convert(Tuple &&) -> convert<Tuple&>;
 } // namespace tuplet
 
+// tuplet::get implementation
+// tuplet::tie implementation
+// tuplet::apply implementation
 namespace tuplet {
 template <size_t I, indexable Tup>
 decltype(auto) get(Tup&& tup) {
@@ -267,15 +281,10 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
 }
 } // namespace tuplet
 
+// tuplet literals
 namespace tuplet::literals {
 // clang-format off
-template <char... D>
-constexpr size_t size_t_from_digits() {
-    static_assert((('0' <= D && D <= '9') && ...), "Must be integral literal");
-    size_t num = 0;
-    return ((num = num * 10 + (D - '0')), ..., num);
-}
-template <char... D> using index_t = tag<size_t_from_digits<D...>()>;
+template <char... D> using index_t = tag<detail::size_t_from_digits<D...>()>;
 template <char... D> constexpr index_t<D...> operator""_tag() { return {}; }
 template <char... D> constexpr index_t<D...> operator""_st() { return {}; }
 template <char... D> constexpr index_t<D...> operator""_nd() { return {}; }
@@ -284,6 +293,8 @@ template <char... D> constexpr index_t<D...> operator""_th() { return {}; }
 // clang-format on
 } // namespace tuplet::literals
 
+// std::tuple_size specialization
+// std::tuple_element specialization
 namespace std {
 template <class... T>
 struct tuple_size<tuplet::tuple<T...>>

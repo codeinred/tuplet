@@ -4,8 +4,8 @@ struct A {
     int value = 0;
 };
 struct B {
-    int value   = 0;
-    B&  operator=(B const& b) {
+    int value = 0;
+    B& operator=(B const& b) {
         value = b.value;
         return *this;
     }
@@ -26,20 +26,23 @@ int main() {
     using tuple_A = tuplet::tuple<int, int, int>;
     using tuple_B = tuplet::tuple<int, int, long>;
 
-    tuple_A a{0, 0, 0};
-    tuple_B b{0, 0, 10};
+    tuple_A a {0, 0, 0};
+    tuple_B b {0, 0, 10};
     a = b;
 
     static_assert(!std::is_trivially_assignable_v<B, B>);
     static_assert(std::is_trivially_assignable_v<C, C>);
     static_assert(!std::is_trivially_assignable_v<C, B>);
 
-    static_assert(std::is_trivially_copyable_v<tuple_A>,
-                  "Expected tuple<int, int, int> to be trivially copyable");
-    static_assert(std::is_default_constructible_v<tuple_A>,
-                  "Expected tuple<int, int, int> to be default constructible");
-    static_assert(std::is_aggregate_v<tuple_A>,
-                  "Expected tuple<int, int, int> to be an aggregate");
+    static_assert(
+        std::is_trivially_copyable_v<tuple_A>,
+        "Expected tuple<int, int, int> to be trivially copyable");
+    static_assert(
+        std::is_default_constructible_v<tuple_A>,
+        "Expected tuple<int, int, int> to be default constructible");
+    static_assert(
+        std::is_aggregate_v<tuple_A>,
+        "Expected tuple<int, int, int> to be an aggregate");
 
     static_assert(
         noexcept(a = a),

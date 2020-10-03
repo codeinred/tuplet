@@ -7,7 +7,7 @@ bool is_good(int a, int b, std::string c) {
 }
 
 int main() {
-    auto tup = tuplet::tuple{1, 2, std::string("Hello, world!")};
+    auto tup = tuplet::tuple {1, 2, std::string("Hello, world!")};
 
     auto [a, b, c] = tup;
 

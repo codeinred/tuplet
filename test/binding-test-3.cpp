@@ -8,7 +8,7 @@ bool is_good(int a, int b, std::string c) {
 }
 
 int main() {
-    auto tup = tuplet::tuple{
+    auto tup = tuplet::tuple {
         1, std::make_unique<int>(2), std::string("Hello, world!")};
 
     // Check that moving a tuple moves the elements when

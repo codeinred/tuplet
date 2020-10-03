@@ -9,9 +9,9 @@ bool is_good(int a, int b, std::string c) {
 int main() {
     using namespace tuplet::literals;
 
-    auto tup1 = tuplet::tuple{0, 0, std::string()};
+    auto tup1 = tuplet::tuple {0, 0, std::string()};
 
-    tuplet::tuple<int&, int&, std::string&> tup = tuplet::convert { tup1 };
+    tuplet::tuple<int&, int&, std::string&> tup = tuplet::convert {tup1};
 
     tup1[0_th] = 1;
     tup1[1_st] = 2;

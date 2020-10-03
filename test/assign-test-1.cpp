@@ -7,8 +7,8 @@ bool is_good(int a, int b, std::string c) {
 }
 
 int main() {
-    int         a = 0;
-    int         b = 0;
+    int a = 0;
+    int b = 0;
     std::string c;
 
     tuplet::tie(a, b, c).assign(1, 2, "Hello, world!");
