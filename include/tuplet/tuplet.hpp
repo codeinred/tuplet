@@ -5,7 +5,24 @@
 #include <type_traits>
 #include <utility>
 
+// tuplet type traits & concepts
 namespace tuplet {
+template <class T>
+using identity_t = T;
+
+template <size_t I>
+using tag = std::integral_constant<size_t, I>;
+
+template <size_t I>
+constexpr tag<I> tag_v {};
+
+template <size_t N>
+using tag_range = std::make_index_sequence<N>;
+} // namespace tuplet
+
+// tuplet concepts
+namespace tuplet {
+// clang-format off
 template <class T, class U>
 concept same_as = std::is_same_v<T, U>&& std::is_same_v<U, T>;
 
@@ -20,22 +37,17 @@ concept wrapper = requires(Wrapper w) {
     (typename Wrapper::type&)(w);
 };
 
-template <size_t I>
-using index = std::integral_constant<size_t, I>;
-
-template <size_t... I>
-using indexes = std::index_sequence<I...>;
-
 template <class Tuple>
-constexpr auto indicies =
-    std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>();
+concept base_list_tuple = requires() {
+    typename std::decay_t<Tuple>::base_list;
+};
 
 template <class T>
 concept empty_type = std::is_empty_v<T>;
 
 template <class T>
 concept indexable = empty_type<T> || requires(T t) {
-    t[index<0>()];
+    t[tag<0>()];
 };
 
 template <class T>
@@ -47,166 +59,231 @@ template <class U, class T>
 concept assignable_to = requires(U u, T t) {
     t = u;
 };
+// clang-format on
+} // namespace tuplet
 
-namespace detail {
+// tuplet::type_list implementation
+// tuplet::type_map implementation
+// tuplet::tuple_elem implementation
+// tuplet::deduce_elems
+namespace tuplet {
+template <class... T>
+struct type_list {};
+
+template <class... Bases>
+struct type_map : Bases... {
+    using base_list = type_list<Bases...>;
+    using Bases::operator[]...;
+    using Bases::decl_elem...;
+};
+
 template <size_t I, class T>
 struct tuple_elem {
-    static T decl_elem(index<I>);
+    // Like declval, but with the element
+    static T decl_elem(tag<I>);
+    using type = T;
 
-    [[no_unique_address]] T elem;
+    [[no_unique_address]] T value;
 
-    constexpr decltype(auto) operator[](index<I>) & { return (elem); }
-    constexpr decltype(auto) operator[](index<I>) const& { return (elem); }
-    constexpr decltype(auto) operator[](index<I>) && {
-        return (std::move(*this).elem);
+    constexpr decltype(auto) operator[](tag<I>) & { return (value); }
+    constexpr decltype(auto) operator[](tag<I>) const& { return (value); }
+    constexpr decltype(auto) operator[](tag<I>) && {
+        return (std::move(*this).value);
     }
-};
-template <class A, class... T>
-struct tuple_base;
-
-template <size_t... I, class... T>
-struct tuple_base<std::index_sequence<I...>, T...> : tuple_elem<I, T>... {
-    using tuple_elem<I, T>::operator[]...;
-    using tuple_elem<I, T>::decl_elem...;
 };
 
 template <class T>
-struct unwrap_type {
+struct deduce_elem {
     using type = T;
 };
 template <wrapper T>
-struct unwrap_type<T> {
+struct deduce_elem<T> {
     using type = typename T::type&;
 };
 template <class T>
-using unwrap_t = typename unwrap_type<T>::type;
+using deduce_elem_t = typename deduce_elem<T>::type;
+} // namespace tuplet
 
-template <size_t... I, class Dest, class... T>
-constexpr Dest& assign_impl(Dest& dest, indexes<I...>, T&&... elems) {
-    return ((void)(dest[index<I>()] = std::forward<T>(elems)), ..., dest);
-}
-template <size_t... I, class Dest, class Tup>
-constexpr Dest& assign_tuple(Dest& dest, Tup&& tup, indexes<I...>) {
-    return (
-        (void)(dest[index<I>()] = get<I>(std::forward<Tup>(tup))), ..., dest);
-}
-template <class Product, class Source, size_t... I>
-constexpr Product convert_impl(Source&& source, indexes<I...>) {
-    return Product{std::forward<Source>(source)[index<I>()]...};
-}
-template <class F, class Tuple, size_t... I>
-constexpr decltype(auto) apply_impl(F&& func, Tuple&& tup, indexes<I...>) {
-    return std::forward<F>(func)(std::forward<Tuple>(tup)[index<I>()]...);
-}
-} // namespace detail
+// tuplet::detail::get_tuple_base implementation
+// tuplet::detail::convert_impl
 
-template <class F, indexable Tuple>
-constexpr decltype(auto) apply(F&& func, Tuple&& tup) {
-    return detail::apply_impl(
-        std::forward<F>(func), std::forward<Tuple>(tup), indicies<Tuple>);
+namespace tuplet::detail {
+template <class A, class... T>
+struct get_tuple_base;
+
+template <size_t... I, class... T>
+struct get_tuple_base<std::index_sequence<I...>, T...> {
+    using type = type_map<tuple_elem<I, T>...>;
+};
+
+template <class Out, class In, class... Bases>
+constexpr Out convert_impl(In&& in, type_list<Bases...>) {
+    return Out {std::forward<In>(in).identity_t<Bases>::value...};
 }
+template <class F, class Tup, class... Bases>
+constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
+    return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
+}
+} // namespace tuplet::detail
+
+namespace tuplet {
+template <class... T>
+using tuple_base_t =
+    typename detail::get_tuple_base<tag_range<sizeof...(T)>, T...>::type;
 
 template <class... T>
-struct tuple
-  : detail::tuple_base<std::make_index_sequence<sizeof...(T)>, T...> {
-    using indicies_t = std::make_index_sequence<sizeof...(T)>;
-    constexpr static auto                       indicies = indicies_t();
-    using detail::tuple_base<indicies_t, T...>::operator[];
-    using detail::tuple_base<indicies_t, T...>::decl_elem;
+struct tuple : tuple_base_t<T...> {
+    constexpr static size_t N = sizeof...(T);
+    using super = tuple_base_t<T...>;
+    using super::operator[];
+    using base_list = typename super::base_list;
+    using super::decl_elem;
 
     template <other_than<tuple> Type> // Preserves default assignments
     constexpr auto& operator=(Type&& tup) {
-        return assign_tuple(*this, std::forward<Type>(tup), indicies);
+        eq_impl(tup);
+        return *this;
     }
 
     template <assignable_to<T>... U>
     constexpr auto& assign(U&&... values) {
-        return detail::assign_impl(*this, indicies, std::forward<U>(values)...);
+        [&, this ]<class... B>(type_list<B...>) {
+            (void(B::value = std::forward<U>(values)), ...);
+        }
+        (base_list());
+        return *this;
+    }
+
+   private:
+    template <base_list_tuple Tuple>
+    void eq_impl(Tuple&& t) {
+        [&,
+         this ]<class... B1, class... B2>(type_list<B1...>, type_list<B2...>) {
+            (void(B1::value = t.identity_t<B2>::value), ...);
+        }
+        (base_list(), typename std::decay_t<Tuple>::base_list());
+    }
+    template <class Other>
+    void eq_impl(Other&& other) {
+        [&, this ]<size_t... I>(std::index_sequence<I...>) {
+            (void(
+                 tuple_elem<I, T>::value =
+                     std::get<I>(std::forward<Other>(other))),
+             ...);
+        }
+        (tag_range<N>());
     }
 };
 template <class... T>
-tuple(T...) -> tuple<detail::unwrap_t<T>...>;
+tuple(T...) -> tuple<deduce_elem_t<T>...>;
+} // namespace tuplet
 
+namespace tuplet {
 template <class First, class Second>
 struct pair {
-    constexpr static indexes<0, 1> indicies{};
-    [[no_unique_address]] First    first;
-    [[no_unique_address]] Second   second;
+    constexpr static size_t N = 2;
+    [[no_unique_address]] First first;
+    [[no_unique_address]] Second second;
 
-    constexpr decltype(auto) operator[](index<0>) & { return (first); }
-    constexpr decltype(auto) operator[](index<0>) const& { return (first); }
-    constexpr decltype(auto) operator[](index<0>) && {
+    constexpr decltype(auto) operator[](tag<0>) & { return (first); }
+    constexpr decltype(auto) operator[](tag<0>) const& { return (first); }
+    constexpr decltype(auto) operator[](tag<0>) && {
         return (std::move(*this).first);
     }
-    constexpr decltype(auto) operator[](index<1>) & { return (second); }
-    constexpr decltype(auto) operator[](index<1>) const& { return (second); }
-    constexpr decltype(auto) operator[](index<1>) && {
+    constexpr decltype(auto) operator[](tag<1>) & { return (second); }
+    constexpr decltype(auto) operator[](tag<1>) const& { return (second); }
+    constexpr decltype(auto) operator[](tag<1>) && {
         return (std::move(*this).second);
     }
 
     template <other_than<pair> Type> // Preserves default assignments
     constexpr auto& operator=(Type&& tup) {
-        return assign_tuple(*this, std::forward<Type>(tup), indicies);
+        auto&& [a, b] = std::forward<Type>(tup);
+        first = std::forward<decltype(a)>(a);
+        second = std::forward<decltype(b)>(b);
+        return *this;
     }
 
     template <assignable_to<First> F2, assignable_to<Second> S2>
     constexpr auto& assign(F2&& f, S2&& s) {
-        first  = std::forward<F2>(f);
+        first = std::forward<F2>(f);
         second = std::forward<S2>(s);
         return *this;
     }
 };
 template <class A, class B>
-pair(A, B) -> pair<detail::unwrap_t<A>, detail::unwrap_t<B>>;
+pair(A, B) -> pair<deduce_elem_t<A>, deduce_elem_t<B>>;
+} // namespace tuplet
 
-// Converts from one tuple type to any other tuple or aggregate
+namespace tuplet {
+// Converts from one tuple type to any other tuple or U
 template <class Tuple>
 struct convert {
-    using indicies_t =
-        std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>;
-    constexpr static indicies_t indicies{};
-    Tuple                       tuple;
-    template <class Aggregate>
-    constexpr operator Aggregate() & {
-        return detail::convert_impl<Aggregate>((tuple), indicies);
+    using base_list = typename std::decay_t<Tuple>::base_list;
+    Tuple tuple;
+    template <class U>
+    constexpr operator U() const {
+        return detail::convert_impl<U>((tuple), base_list());
     }
-    template <class Aggregate>
-    constexpr operator Aggregate() const& {
-        return detail::convert_impl<Aggregate>((tuple), indicies);
-    }
-    template <class Aggregate>
-    constexpr operator Aggregate() && {
-        return detail::convert_impl<Aggregate>((std::move(*this).tuple),
-                                               indicies);
+    template <class U>
+    constexpr operator U() {
+        return detail::convert_impl<U>((std::move(*this).tuple), base_list());
     }
 };
 template <class Tuple>
 convert(Tuple&) -> convert<Tuple&>;
 template <class Tuple>
-convert(Tuple&&) -> convert<Tuple&>;
+convert(Tuple &&) -> convert<Tuple&>;
+} // namespace tuplet
 
-// clang-format off
+namespace tuplet {
 template <size_t I, indexable Tup>
-decltype(auto) get(Tup&& tup) { return std::forward<Tup>(tup)[index<I>()]; }
+decltype(auto) get(Tup&& tup) {
+    return std::forward<Tup>(tup)[tag<I>()];
+}
 
-template <class... T> tuple<T&...> tie(T&... args) { return {args...}; }
+template <class... T>
+tuple<T&...> tie(T&... t) {
+    return {t...};
+}
 
-namespace literals {
+template <class F, base_list_tuple Tup>
+constexpr decltype(auto) apply(F&& func, Tup&& tup) {
+    return detail::apply_impl(
+        std::forward<F>(func),
+        std::forward<Tup>(tup),
+        typename std::decay_t<Tup>::base_list());
+}
+template <class F, class A, class B>
+constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>& pair) {
+    return std::forward<F>(func)(pair.first, pair.second);
+}
+template <class F, class A, class B>
+constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B> const& pair) {
+    return std::forward<F>(func)(pair.first, pair.second);
+}
+template <class F, class A, class B>
+constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
+    return std::forward<F>(func)(std::move(pair).first, std::move(pair).second);
+}
+} // namespace tuplet
+
+namespace tuplet::literals {
+// clang-format off
 template <char... D>
 constexpr size_t size_t_from_digits() {
     static_assert((('0' <= D && D <= '9') && ...), "Must be integral literal");
     size_t num = 0;
     return ((num = num * 10 + (D - '0')), ..., num);
 }
-template <char... D> using index_t = index<size_t_from_digits<D...>()>;
-template <char... D> constexpr index_t<D...> operator""_idx() { return {}; }
+template <char... D> using index_t = tag<size_t_from_digits<D...>()>;
+template <char... D> constexpr index_t<D...> operator""_tag() { return {}; }
 template <char... D> constexpr index_t<D...> operator""_st() { return {}; }
 template <char... D> constexpr index_t<D...> operator""_nd() { return {}; }
 template <char... D> constexpr index_t<D...> operator""_rd() { return {}; }
 template <char... D> constexpr index_t<D...> operator""_th() { return {}; }
 // clang-format on
-} // namespace literals
-} // namespace tuplet
+} // namespace tuplet::literals
 
 namespace std {
 template <class... T>
@@ -215,7 +292,7 @@ struct tuple_size<tuplet::tuple<T...>>
 
 template <size_t I, class... T>
 struct tuple_element<I, tuplet::tuple<T...>> {
-    using type = decltype(tuplet::tuple<T...>::decl_elem(tuplet::index<I>()));
+    using type = decltype(tuplet::tuple<T...>::decl_elem(tuplet::tag<I>()));
 };
 template <class A, class B>
 struct tuple_size<tuplet::pair<A, B>> : std::integral_constant<size_t, 2> {};

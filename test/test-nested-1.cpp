@@ -15,5 +15,5 @@ int main() {
         tuple { "Hello, world!" }
     };
 
-    return !is_good(x[0_idx][0_idx][0_idx], x[0_idx][0_idx][1_idx], x[1_idx][0_idx]);
+    return !is_good(x[0_tag][0_tag][0_tag], x[0_tag][0_tag][1_tag], x[1_tag][0_tag]);
 }
