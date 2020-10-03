@@ -124,6 +124,10 @@ template <class F, class Tup, class... Bases>
 constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
     return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
 }
+template <class T, class... U, class... B>
+void assign_impl(T&& tup, type_list<B...>, U&&... u) {
+    (void(tup.identity_t<B>::value = std::forward<U>(u)), ...);
+}
 } // namespace tuplet::detail
 
 namespace tuplet {
@@ -155,10 +159,7 @@ struct tuple : tuple_base_t<T...> {
 
     template <assignable_to<T>... U>
     constexpr auto& assign(U&&... values) {
-        [&, this ]<class... B>(type_list<B...>) {
-            (void(B::value = std::forward<U>(values)), ...);
-        }
-        (base_list());
+        detail::assign_impl(*this, base_list(), std::forward<U>(values)...);
         return *this;
     }
 
