@@ -139,9 +139,17 @@ struct tuple : tuple_base_t<T...> {
     using base_list = typename super::base_list;
     using super::decl_elem;
 
-    template <other_than<tuple> Type> // Preserves default assignments
-    constexpr auto& operator=(Type&& tup) {
-        eq_impl(tup);
+    template <other_than<tuple> U> // Preserves default assignments
+    constexpr auto& operator=(U&& tup) {
+        using tuple2 = std::decay_t<U>;
+        if (base_list_tuple<tuple2>) {
+            eq_impl(
+                std::forward<U>(tup),
+                base_list(),
+                typename tuple2::base_list());
+        } else {
+            eq_impl(std::forward<U>(tup), tag_range<N>());
+        }
         return *this;
     }
 
@@ -155,23 +163,13 @@ struct tuple : tuple_base_t<T...> {
     }
 
    private:
-    template <base_list_tuple Tuple>
-    void eq_impl(Tuple&& t) {
-        [&,
-         this ]<class... B1, class... B2>(type_list<B1...>, type_list<B2...>) {
-            (void(B1::value = t.identity_t<B2>::value), ...);
-        }
-        (base_list(), typename std::decay_t<Tuple>::base_list());
+    template <class Tuple, class... B1, class... B2>
+    void eq_impl(Tuple&& t, type_list<B1...>, type_list<B2...>) {
+        (void(B1::value = t.identity_t<B2>::value), ...);
     }
-    template <class Other>
-    void eq_impl(Other&& other) {
-        [&, this ]<size_t... I>(std::index_sequence<I...>) {
-            (void(
-                 tuple_elem<I, T>::value =
-                     std::get<I>(std::forward<Other>(other))),
-             ...);
-        }
-        (tag_range<N>());
+    template <class U, size_t... I>
+    void eq_impl(U&& u, std::index_sequence<I...>) {
+        (void(tuple_elem<I, T>::value = get<I>(std::forward<U>(u))), ...);
     }
 };
 template <class... T>
