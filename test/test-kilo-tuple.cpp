@@ -58,7 +58,7 @@ auto get_tuple() {
 int main() {
     auto tup = get_tuple();
     auto sum_ops = [](auto... i) { return (i + ...); };
-    if (apply(sum_ops, tup) == 500500) {
+    if (apply(sum_ops, tup) == (tup.N * (tup.N + 1)) / 2) {
         return 0;
     } else {
         return 1;
