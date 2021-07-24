@@ -1,23 +1,26 @@
 # tuplet
 
-**tuplet** is a one-header library that implements a fast and lightweight
-tuple type `tuplet::tuple` that guarantees a sensible data layout.
-`tuplet::tuple<T...>` is an aggregate type, and this means that when
-it's members are trivial, `tuplet::tuple` is
+**tuplet** is a one-header library that implements a fast and lightweight tuple
+type, `tuplet::tuple`, that guarantees performance, fast compile times, and a
+sensible and efficent data layout. A `tuplet::tuple` is implemented as an
+aggregate containing it's elements, and this ensures that it's
 
 - trivially copyable,
 - trivially moveable,
 - trivially assignable,
 - trivially constructible,
-- and trivially destructible
+- and trivially destructible.
 
-This results in better code generation by the compiler, faster compile
-times, and smaller executables.
+This results in better code generation by the compiler, allowing `tuplet::tuple`
+to be passed in registers, and to be serialized and deserialized via `memcpy`.
 
-What's more, the implementation of `tuplet::tuple` is around *one eigth*
-the size of `std::tuple`, both in terms of lines, and in terms of kilobytes
-of code. `tuplet.hpp` clocks in at 230 lines, compared to 1724 lines for gcc 9's
+What's more, the implementation of `tuplet::tuple` is less than one fifth the
+size of `std::tuple`, both in terms of lines, and in terms of kilobytes of code.
+`tuplet.hpp` clocks in at 300 odd lines, compared to 1724 lines for gcc 9's
 implementation of `std::tuple`.
+
+If you'd like a further discussion of how `tuplet::tuple` compares to `std::tuple`
+and why you should use it, see the [Motivation](#Motivation) section below!
 
 ## Usage
 
@@ -147,3 +150,15 @@ auto print = [](auto&... args) {
 
 apply(print, tuplet::tuple{1, 2, "Hello, world!"});
 ```
+
+# Motivation
+
+This section intends to address a single fundamental question: *Why would I use this instead of `std::tuple`?*
+
+It is my hope that by addressing this question, I might explain my purpose for writing this library, as well as providing a clearer overview of what it provides.
+
+`std::tuple` is *not* a zero-cost abstraction, and using it introduces a runtime
+penalty in comparison to traditional aggregate datatypes, such as structs. It
+
+also compiles slowly, introducing a penalty on libraries that make extensive use
+of it.
