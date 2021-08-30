@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
-#include <tuplet/tuplet.hpp>
+#include <tuplet/tuple.hpp>
 
 bool is_good(int a, int b, std::string c) {
     return a == 1 && b == 2 && c == "Hello, world!";
