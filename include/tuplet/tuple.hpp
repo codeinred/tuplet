@@ -43,10 +43,10 @@ concept base_list_tuple = requires() {
 };
 
 template <class T>
-concept empty_type = std::is_empty_v<T>;
+concept stateless = std::is_empty_v<T>;
 
 template <class T>
-concept indexable = empty_type<T> || requires(T t) {
+concept indexable = stateless<T> || requires(T t) {
     t[tag<0>()];
 };
 
