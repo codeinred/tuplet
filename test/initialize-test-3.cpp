@@ -9,7 +9,9 @@ bool is_good(int a, int b, std::string c) {
 
 int main() {
     auto tup1 = tuplet::tuple {
-        1, std::make_unique<int>(2), std::string("Hello, world!")};
+        1,
+        std::make_unique<int>(2),
+        std::string("Hello, world!")};
 
     auto tup = std::move(tup1);
 
