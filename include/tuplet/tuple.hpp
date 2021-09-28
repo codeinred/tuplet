@@ -141,8 +141,8 @@ constexpr size_t size_t_from_digits() {
 // tuplet::tuple implementation
 namespace tuplet {
 template <class... T>
-using tuple_base_t =
-    typename detail::get_tuple_base<tag_range<sizeof...(T)>, T...>::type;
+using tuple_base_t = typename detail::
+    get_tuple_base<tag_range<sizeof...(T)>, T...>::type;
 
 template <class... T>
 struct tuple : tuple_base_t<T...> {
@@ -243,7 +243,7 @@ struct convert {
 template <class Tuple>
 convert(Tuple&) -> convert<Tuple&>;
 template <class Tuple>
-convert(Tuple &&) -> convert<Tuple&>;
+convert(Tuple&&) -> convert<Tuple&>;
 } // namespace tuplet
 
 // tuplet::get implementation
