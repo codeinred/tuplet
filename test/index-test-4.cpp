@@ -11,7 +11,9 @@ bool is_good(int a, int b, std::string c) {
 int main() {
     using namespace tuplet::literals;
     auto tup = tuplet::tuple {
-        1, std::make_unique<int>(2), std::string("Hello, world!")};
+        1,
+        std::make_unique<int>(2),
+        std::string("Hello, world!")};
 
     static_assert(
         std::is_same_v<std::tuple_element_t<0, decltype(tup)>, int>,
