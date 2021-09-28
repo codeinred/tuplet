@@ -20,5 +20,7 @@ int main() {
         "Expected std::string& at element 2");
 
     return !is_good(
-        tup[tuplet::tag<0>()], tup[tuplet::tag<1>()], tup[tuplet::tag<2>()]);
+        tup[tuplet::tag<0>()],
+        tup[tuplet::tag<1>()],
+        tup[tuplet::tag<2>()]);
 }
