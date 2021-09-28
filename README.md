@@ -1,4 +1,4 @@
-# tuplet
+# tuplet: A Lightweight Tuple Library for Modern C++
 
 **tuplet** is a one-header library that implements a fast and lightweight tuple
 type, `tuplet::tuple`, that guarantees performance, fast compile times, and a
@@ -164,7 +164,7 @@ auto print = [](auto&... args) {
 apply(print, tuplet::tuple{1, 2, "Hello, world!"});
 ```
 
-# Motivation
+## Motivation
 
 This section intends to address a single fundamental question: _Why would I use
 this instead of `std::tuple`?_
@@ -174,7 +174,25 @@ writing this library, as well as providing a clearer overview of what it
 provides.
 
 `std::tuple` is _not_ a zero-cost abstraction, and using it introduces a runtime
-penalty in comparison to traditional aggregate datatypes, such as structs. It
+penalty in comparison to traditional aggregate datatypes, such as structs.
+`std::tuple` also compiles slowly, introducing a penalty on libraries that make
+extensive use of it.
 
-also compiles slowly, introducing a penalty on libraries that make extensive use
-of it.
+`tuplet::tuple` has none of these problems.
+
+- `tuplet::tuple` an aggregate type.
+  - When the elements are trivially constructible, `tuplet::tuple` is trivially
+    constructible
+  - When elements are trivially destructible, `tuplet::tuple` is trivially
+    destructible
+- `tuplet::tuple` can be passed in the registers. This means that there's's no
+  overhead compared to a struct
+- Compilation is much faster, especially for larger or more complex tuples.
+
+  This occurs because `tuplet::tuple` is an aggregate type, and also because
+  indexing was specifically designed in a way that allowed for faster lookp of
+  elements.
+
+- `tuplet::tuple` takes advantage of empty-base-optimization and
+  `[[no_unique_address]]`. This means that empty types don't contribute to the
+  size of the tuple.
