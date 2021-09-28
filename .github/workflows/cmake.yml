@@ -1,6 +1,6 @@
 name: CMake
 
-on: [push]
+on: [push, pull_request]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -56,25 +56,33 @@ jobs:
             compiler: clang++-10
             flags: ""
             build_type: Release
-            install_compiler: sudo apt install g++-10 && sudo apt install clang-10
+            install_compiler: sudo apt install g++-10 clang-10
 
           - name: ubuntu-latest-clang-10-debug-libc++
             os: ubuntu-latest
-            compiler: $HOME/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04/bin/clang++
+            compiler: clang++-10
             flags: "-stdlib=libc++"
             build_type: Debug
-            install_compiler: "cd $HOME \
-              && wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
-              && tar -xvf clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz"
+            install_compiler: >
+              sudo apt-get install
+              clang++-10
+              libc++-10-dev
+              libc++1-10
+              libc++abi1-10
+              libc++abi-10-dev
 
           - name: ubuntu-latest-clang-10-release-libc++
             os: ubuntu-latest
-            compiler: $HOME/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04/bin/clang++
+            compiler: clang++-10
             flags: "-stdlib=libc++"
             build_type: Release
-            install_compiler: "cd $HOME \
-              && wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
-              && tar -xvf clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz"
+            install_compiler: >
+              sudo apt-get install
+              clang++-10
+              libc++-10-dev
+              libc++1-10
+              libc++abi1-10
+              libc++abi-10-dev
 
           - name: windows-2019-cl-debug
             os: windows-2019
