@@ -4,19 +4,8 @@ project(tuplet CXX)
 add_library(tuplet INTERFACE)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-if (MSVC)
-    target_compile_options(tuplet INTERFACE "/std:c++latest" "/EHsc")
-endif()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" )
-    target_Compile_options(tuplet INTERFACE "-std=c++2a")
-endif()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
-    target_compile_options(tuplet INTERFACE "-std=c++2a")
-endif()
-
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED 20)
 
 target_include_directories(
     tuplet
