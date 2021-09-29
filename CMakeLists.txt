@@ -46,17 +46,26 @@ if(PROJECT_IS_TOP_LEVEL)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
     set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF)
 
+    # taocpp won't compile without this flag
+    # TODO: file issue
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -Wno-error=unused-but-set-variable)
     # Find the benchmark library, or download it in build/_deps
     find_or_fetch(
         benchmark
         https://github.com/google/benchmark.git
+        main)
+    # Get taocpp-tuple for comparison
+    find_or_fetch(
+        tuple
+        https://github.com/taocpp/tuple.git
         main)
     FetchContent_MakeAvailable(${remote_dependencies})
 
     add_source_dir(
         bench
         tuplet
-        benchmark)
+        benchmark
+        taocpp::tuple)
 endif()
 
 
