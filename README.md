@@ -196,3 +196,12 @@ extensive use of it.
 - `tuplet::tuple` takes advantage of empty-base-optimization and
   `[[no_unique_address]]`. This means that empty types don't contribute to the
   size of the tuple.
+
+## Benchmarks
+
+The compiler is signifigantly better at optimizing memory-intensive operations
+on `tuplet::tuplet` when compared to `std::tuplet`, with a measured speedup of
+2x when copying vectors of 256 elements, and a speedup up 2.25x for vectors of
+512 elements. More benchmarks will be coming soon!
+
+![tuplet-bench-vector-copy-i9900k.png](.github/assets/tuplet-bench-vector-copy-i9900k.png)
