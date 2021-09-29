@@ -1,9 +1,8 @@
-cmake_minimum_required(VERSION 3.0.0)
-project(tuplet CXX)
+cmake_minimum_required(VERSION 3.14)
 
+project(tuplet CXX)
 add_library(tuplet INTERFACE)
 
-option(tuplet_Install "Install CMake targets during install step." ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (MSVC)
@@ -18,7 +17,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
     target_compile_options(tuplet INTERFACE "-std=c++2a")
 endif()
 
-target_compile_definitions(tuplet INTERFACE)
 
 target_include_directories(
     tuplet
@@ -32,23 +30,33 @@ install(
     DESTINATION include
 )
 
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    include(CTest)
-endif()
 
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
+if(PROJECT_IS_TOP_LEVEL)
+    include(CTest)
+    include(${PROJECT_SOURCE_DIR}/helper.cmake)
+
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
 
-    file(GLOB all_tests "test/*.cpp")
+    # Add all files in directory test as tests, and link against tuplet and
+    # threads
+    add_test_dir(test tuplet Threads::Threads)
 
-    foreach(file_name ${all_tests})
-        get_filename_component(test_name ${file_name} NAME_WE)
-        add_executable("${test_name}" "${file_name}")
-        target_link_libraries("${test_name}" PRIVATE tuplet)
-        target_link_libraries("${test_name}" PRIVATE Threads::Threads)
-        add_test(NAME "${test_name}" COMMAND "${test_name}")
-    endforeach()
+    set(BENCHMARK_ENABLE_TESTING OFF)
+    set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
+    set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF)
+
+    # Find the benchmark library, or download it in build/_deps
+    find_or_fetch(
+        benchmark
+        https://github.com/google/benchmark.git
+        main)
+    FetchContent_MakeAvailable(${remote_dependencies})
+
+    add_source_dir(
+        bench
+        tuplet
+        benchmark)
 endif()
 
 
