@@ -202,9 +202,27 @@ extensive use of it.
 The compiler is signifigantly better at optimizing memory-intensive operations
 on `tuplet::tuplet` when compared to `std::tuplet`, with a measured speedup of
 2x when copying vectors of 256 elements, and a speedup up 2.25x for vectors of
-512 elements. More benchmarks will be coming soon!
+512 elements containing homogenous tuples (tuples where all types are identical,
+test size 8 bytes per element).
 
 ![tuplet-bench-vector-copy-i9900k.png](.github/assets/tuplet-bench-vector-copy-i9900k.png)
+
+Furthermore, for tuples containing more than one type of element (heterogenous
+tuples, test size 8 bytes per element), speedups as large as 13.35x were
+observed with `tuplet::tuple` when compared to `std::tuple`!
+
+![tuplet-bench-vector-copy-heterogenous-i9900k.png](.github/assets/tuplet-bench-vector-copy-heterogenous-i9900k.png)
+
+In these benchmarks, the `v<n>` suffix measures the time to copy a vector
+containing _n_ elements, each of which is a tuple. You can view the code in the
+`bench/` folder of the repository. It uses the Google Benchmark library.
+
+**Why the speedup?** As stated before, `tuplet::tuple` is an aggregate type.
+This means that the compiler is better able to judge what type of optimizations
+it's allowed to do. In the case of the copy benchmarks, the compiler is able to
+implement the copy operation using an memcpy-like operation for `tuplet::tuple`.
+This can't be done for `std::tuple`, however, because `std::tuple` isn't an
+aggregate type, and isn't trivially copyable.
 
 To run the benchmarks on your local machine, simply clone and build the project
 with a compiler that supports C++20:
