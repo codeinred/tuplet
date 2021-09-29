@@ -222,6 +222,27 @@ feature), which would allow for a re-write of `std::tuple`; or that some future
 version introduces a language-level tuple construct, rendering `std::tuple`
 obsolete in it's entirety.
 
+**Other weird std::tuple facts:** When using the MSVC standard library
+implementation, `std::tuple` won't even necessarily have the same size as a
+struct with the same member types. This caused a compile error when I introduced
+a `static_assert` that (incorrectly) assumed `std::tuple` would be sensibly
+sized. I had to disable the `static_assert` for MSVC:
+
+```cpp
+// In bench-heterogenous.cpp
+using hetero_std_tuple_t = std::tuple<int8_t, int8_t, int16_t, int32_t>;
+using hetero_tuplet_tuple_t = tuplet::tuple<int8_t, int8_t, int16_t, int32_t>;
+
+// For some reason this doesn't apply in windows
+#ifndef _MSC_VER
+static_assert(sizeof(hetero_std_tuple_t) == 8, "Expected std::tuple to be 8 bytes");
+#endif
+static_assert(sizeof(hetero_tuplet_tuple_t) == 8, "Expected tuplet::tuple to be 8 bytes");
+```
+
+Needless to say, being an aggregate type, `tuplet::tuple` does not suffer from
+this problem.
+
 ## Benchmarks
 
 The compiler is signifigantly better at optimizing memory-intensive operations
