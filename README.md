@@ -197,6 +197,31 @@ extensive use of it.
   `[[no_unique_address]]`. This means that empty types don't contribute to the
   size of the tuple.
 
+### Can `std::tuple` be rewritten to have these properties?
+
+Not without both an ABI break and a change to it's API. There are a few reasons
+for this.
+
+- The memory layout of `std::tuple` tends to be in reverse order when compared
+  to a corresponding struct containing the same types. Fixing this would be an
+  ABI break.
+- Because `std::tuple` isn't trivially copyable and isn't an aggregate, it tends
+  to be passed on the stack instead of in the registers. Fixing this would be an
+  ABI break.
+- [The constructor of `std::tuple` provides overloads for passing an allocator to the constructor](https://en.cppreference.com/w/cpp/utility/tuple/tuple).
+  Given that `std::tuple` _should_ allocate on the stack, I don't know why this
+  was put into the standard.
+
+Having an allocator makes sense for a type like `std::vector`, which was
+designed for use even in ususual memory-constrained situations, but in my
+opinion, `std::tuple` would have been better off with an API that was as simple
+as possible.
+
+I hope that either a future version of C++ introduces epochs (or a similar
+feature), which would allow for a re-write of `std::tuple`; or that some future
+version introduces a language-level tuple construct, rendering `std::tuple`
+obsolete in it's entirety.
+
 ## Benchmarks
 
 The compiler is signifigantly better at optimizing memory-intensive operations
