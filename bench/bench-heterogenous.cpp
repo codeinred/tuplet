@@ -9,7 +9,10 @@
 using hetero_std_tuple_t = std::tuple<int8_t, int8_t, int16_t, int32_t>;
 using hetero_tuplet_tuple_t = tuplet::tuple<int8_t, int8_t, int16_t, int32_t>;
 
+// For some reason this doesn't apply in windows
+#ifndef _MSC_VER
 static_assert(sizeof(hetero_std_tuple_t) == 8, "Expected std::tuple to be 8 bytes");
+#endif
 static_assert(sizeof(hetero_tuplet_tuple_t) == 8, "Expected tuplet::tuple to be 8 bytes");
 
 std::vector<hetero_std_tuple_t> heterogenous_std_tuple_v4(4);
