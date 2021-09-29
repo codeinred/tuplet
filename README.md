@@ -205,3 +205,14 @@ on `tuplet::tuplet` when compared to `std::tuplet`, with a measured speedup of
 512 elements. More benchmarks will be coming soon!
 
 ![tuplet-bench-vector-copy-i9900k.png](.github/assets/tuplet-bench-vector-copy-i9900k.png)
+
+To run the benchmarks on your local machine, simply clone and build the project
+with a compiler that supports C++20:
+
+```bash
+git clone https://github.com/codeinred/tuplet.git
+cd tuplet
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+build/bench
+```
