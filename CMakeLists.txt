@@ -31,9 +31,9 @@ install(
 )
 
 
+include(${PROJECT_SOURCE_DIR}/helper.cmake)
 if(PROJECT_IS_TOP_LEVEL)
     include(CTest)
-    include(${PROJECT_SOURCE_DIR}/helper.cmake)
 
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
