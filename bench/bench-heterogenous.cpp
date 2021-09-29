@@ -9,8 +9,8 @@
 using hetero_std_tuple_t = std::tuple<int8_t, int8_t, int16_t, int32_t>;
 using hetero_tuplet_tuple_t = tuplet::tuple<int8_t, int8_t, int16_t, int32_t>;
 
-static_assert(sizeof(hetero_std_tuple_t) == 8);
-static_assert(sizeof(hetero_tuplet_tuple_t) == 8);
+static_assert(sizeof(hetero_std_tuple_t) == 8, "Expected std::tuple to be 8 bytes");
+static_assert(sizeof(hetero_tuplet_tuple_t) == 8, "Expected tuplet::tuple to be 8 bytes");
 
 std::vector<hetero_std_tuple_t> heterogenous_std_tuple_v4(4);
 std::vector<hetero_std_tuple_t> heterogenous_std_tuple_v8(8);

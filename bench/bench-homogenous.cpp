@@ -9,8 +9,8 @@
 using homo_std_tuple_t = std::tuple<int8_t, int8_t, int8_t, int8_t, int8_t, int8_t, int8_t, int8_t>;
 using homo_tuplet_tuple_t = tuplet::tuple<int8_t, int8_t, int8_t, int8_t, int8_t, int8_t, int8_t, int8_t>;
 
-static_assert(sizeof(homo_std_tuple_t) == 8);
-static_assert(sizeof(homo_tuplet_tuple_t) == 8);
+static_assert(sizeof(homo_std_tuple_t) == 8, "Expected std::tuple to be 8 bytes");
+static_assert(sizeof(homo_tuplet_tuple_t) == 8, "Expected tuplet::tuple to be 8 bytes");
 
 std::vector<homo_std_tuple_t> homogenous_std_tuple_v4(4);
 std::vector<homo_std_tuple_t> homogenous_std_tuple_v8(8);

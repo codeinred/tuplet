@@ -6,7 +6,7 @@ add_library(tuplet INTERFACE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (MSVC)
-    target_compile_options(tuplet INTERFACE "/std:c++latest")
+    target_compile_options(tuplet INTERFACE "/std:c++latest" "/EHsc")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" )
