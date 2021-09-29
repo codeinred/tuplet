@@ -18,17 +18,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [
-          ubuntu-latest-gcc-10-debug,
-          ubuntu-latest-clang-10-debug,
-          ubuntu-latest-gcc-10-release,
-          ubuntu-latest-clang-10-release,
-          ubuntu-latest-clang-10-debug-libc++,
-          ubuntu-latest-clang-10-release-libc++,
-          windows-2019-cl-debug,
-          windows-2019-cl-release
-        ]
-
         include:
           - name: ubuntu-latest-gcc-10-debug
             os: ubuntu-latest
@@ -84,15 +73,15 @@ jobs:
               libc++abi1-10
               libc++abi-10-dev
 
-          - name: windows-2019-cl-debug
-            os: windows-2019
+          - name: windows-2022-cl-debug
+            os: windows-2022
             compiler: cl
             flags: ""
             build_type: Debug
             install_compiler: ""
 
-          - name: windows-2019-cl-release
-            os: windows-2019
+          - name: windows-2022-cl-release
+            os: windows-2022
             compiler: cl
             flags: ""
             build_type: Release
