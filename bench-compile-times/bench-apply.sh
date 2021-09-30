@@ -1,5 +1,8 @@
 #!/usr/bin/zsh
 
+# we should exit on error
+set -e
+
 if [ -n "$CXX" ]; then
     compiler="$CXX"
 else
