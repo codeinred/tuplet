@@ -24,13 +24,15 @@ for n in {$SKIP..$MAX..$SKIP}; do
     # Create a list of n values from 1..n
     values="$(echo {1..$n},)"
     # This indicates that GNU time should be used, rather than the built-in shell time command
+    echo -n "tuplet::tuple: "
     \time -f "$n, %e, %M" $compiler apply.cpp print_ans.o \
         -std=c++20 \
         -I../include \
-        -DVALUES="$values" 2>>data/tuplet-apply-times.csv
+        -DVALUES="$values" 2>&1 | tee -a data/tuplet-apply-times.csv
 
+    echo -n "std::tuple:    "
     \time -f "$n, %e, %M" $compiler apply.cpp print_ans.o \
         -std=c++20 \
         -DVALUES="$values" \
-        -DUSE_STD_TUPLE 2>>data/std-apply-times.csv
+        -DUSE_STD_TUPLE 2>&1 | tee -a data/std-apply-times.csv
 done
