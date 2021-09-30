@@ -1,3 +1,9 @@
 compile_commands.json
-.ccls-cache
-build
+
+# Directories
+.ccls-cache/
+build/
+
+# File types
+*.out
+*.o
