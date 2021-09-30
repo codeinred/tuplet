@@ -19,8 +19,8 @@ MAX=$2
 
 mkdir -p data
 mkdir -p build
-echo -e "$cpu_model" "\n" "$compiler_version" "\n" "---" >data/tuplet-apply-times.csv
-echo -e "$cpu_model" "\n" "$compiler_version" "\n" "---" >data/std-apply-times.csv
+echo -e "$cpu_model\n$compiler_version\n---" >data/tuplet-apply-times.csv
+echo -e "$cpu_model\n$compiler_version\n---" >data/std-apply-times.csv
 
 # Create print_ans.o
 $compiler -c print_ans.cpp -o build/print_ans.o
