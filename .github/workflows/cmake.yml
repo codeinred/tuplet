@@ -19,35 +19,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: ubuntu-latest-gcc-10-debug
+          - name: ubuntu-latest-gcc-10
             os: ubuntu-latest
             compiler: g++-10
             flags: ""
             build_type: Debug
             install_compiler: sudo apt install g++-10
 
-          - name: ubuntu-latest-clang-10-debug
+          - name: ubuntu-latest-clang-10
             os: ubuntu-latest
             compiler: clang++-10
             flags: ""
             build_type: Debug
             install_compiler: sudo apt install g++-10 && sudo apt install clang-10
 
-          - name: ubuntu-latest-gcc-10-release
+          - name: ubuntu-latest-clang-12
             os: ubuntu-latest
-            compiler: g++-10
+            compiler: clang++-12
             flags: ""
-            build_type: Release
-            install_compiler: sudo apt install g++-10
+            build_type: Debug
+            install_compiler: sudo apt install g++-10 && sudo apt install clang-12
 
-          - name: ubuntu-latest-clang-10-release
-            os: ubuntu-latest
-            compiler: clang++-10
-            flags: ""
-            build_type: Release
-            install_compiler: sudo apt install g++-10 clang-10
-
-          - name: ubuntu-latest-clang-10-debug-libc++
+          - name: ubuntu-latest-clang-10-libc++
             os: ubuntu-latest
             compiler: clang++-10
             flags: "-stdlib=libc++"
@@ -60,31 +53,24 @@ jobs:
               libc++abi1-10
               libc++abi-10-dev
 
-          - name: ubuntu-latest-clang-10-release-libc++
+          - name: ubuntu-latest-clang-12-libc++
             os: ubuntu-latest
-            compiler: clang++-10
+            compiler: clang++-12
             flags: "-stdlib=libc++"
-            build_type: Release
+            build_type: Debug
             install_compiler: >
               sudo apt-get install
-              clang++-10
-              libc++-10-dev
-              libc++1-10
-              libc++abi1-10
-              libc++abi-10-dev
+              clang++-12
+              libc++-12-dev
+              libc++1-12
+              libc++abi1-12
+              libc++abi-12-dev
 
-          - name: windows-2022-cl-debug
+          - name: windows-2022-cl
             os: windows-2022
             compiler: cl
             flags: ""
             build_type: Debug
-            install_compiler: ""
-
-          - name: windows-2022-cl-release
-            os: windows-2022
-            compiler: cl
-            flags: ""
-            build_type: Release
             install_compiler: ""
 
     steps:

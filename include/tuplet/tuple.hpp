@@ -18,6 +18,10 @@ constexpr tag<I> tag_v {};
 
 template <size_t N>
 using tag_range = std::make_index_sequence<N>;
+
+// tuple needs to be forward-declared for use in tuplet_plus_impl
+template <class... T>
+struct tuple;
 } // namespace tuplet
 
 // tuplet concepts
@@ -36,6 +40,10 @@ concept wrapper = requires(Wrapper w) {
     ->same_as<typename Wrapper::type&>;
     (typename Wrapper::type&)(w);
 };
+template <class Tup>
+using base_list_t = typename std::decay_t<Tup>::base_list;
+template <class Tup>
+using element_list_t = typename std::decay_t<Tup>::element_list;
 
 template <class Tuple>
 concept base_list_tuple = requires() {
@@ -105,9 +113,8 @@ using deduce_elem_t = typename deduce_elem<T>::type;
 } // namespace tuplet
 
 // tuplet::detail::get_tuple_base implementation
-// tuplet::detail::convert_impl
 // tuplet::detail::apply_impl
-// tuplet::detail::assign_impl
+// tuplet::detail::tuple_plus_impl
 // tuplet::detail::size_t_from_digits
 namespace tuplet::detail {
 template <class A, class... T>
@@ -118,18 +125,46 @@ struct get_tuple_base<std::index_sequence<I...>, T...> {
     using type = type_map<tuple_elem<I, T>...>;
 };
 
-template <class Out, class In, class... Bases>
-constexpr Out convert_impl(In&& in, type_list<Bases...>) {
-    return Out {std::forward<In>(in).identity_t<Bases>::value...};
-}
 template <class F, class Tup, class... Bases>
 constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
     return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
 }
-template <class T, class... U, class... B>
-constexpr void assign_impl(T&& tup, type_list<B...>, U&&... u) {
-    (void(tup.identity_t<B>::value = std::forward<U>(u)), ...);
+template <
+    class T1,
+    class T2,
+    class... E1,
+    class... E2,
+    class... B1,
+    class... B2>
+constexpr auto tuple_plus_impl(
+    T1&& t1,
+    T2&& t2,
+    type_list<E1...>,
+    type_list<E2...>,
+    type_list<B1...>,
+    type_list<B2...>) -> tuple<E1..., E2...> {
+    return {
+        std::forward<T1>(t1).identity_t<B1>::value...,
+        std::forward<T2>(t2).identity_t<B2>::value...};
 }
+#if defined(__clang__)
+template <class T1, class T2, class... T3>
+constexpr auto tuple_cat_recurse(T1&& t1, T2&& t2, T3&&... t3) {
+    if constexpr (sizeof...(t3) == 0) {
+        return tuple_plus_impl(
+            std::forward<T1>(t1),
+            std::forward<T2>(t2),
+            element_list_t<T1>(),
+            element_list_t<T2>(),
+            base_list_t<T1>(),
+            base_list_t<T2>());
+    } else {
+        return tuple_cat_recurse(
+            std::forward<T1>(t1),
+            tuple_cat_recurse(std::forward<T2>(t2), std::forward<T3>(t3)...));
+    }
+}
+#endif
 template <char... D>
 constexpr size_t size_t_from_digits() {
     static_assert((('0' <= D && D <= '9') && ...), "Must be integral literal");
@@ -150,6 +185,7 @@ struct tuple : tuple_base_t<T...> {
     using super = tuple_base_t<T...>;
     using super::operator[];
     using base_list = typename super::base_list;
+    using element_list = type_list<T...>;
     using super::decl_elem;
 
     template <other_than<tuple> U> // Preserves default assignments
@@ -168,7 +204,7 @@ struct tuple : tuple_base_t<T...> {
 
     template <assignable_to<T>... U>
     constexpr auto& assign(U&&... values) {
-        detail::assign_impl(*this, base_list(), std::forward<U>(values)...);
+        assign_impl(base_list(), std::forward<U>(values)...);
         return *this;
     }
 
@@ -181,12 +217,17 @@ struct tuple : tuple_base_t<T...> {
     constexpr void eq_impl(U&& u, std::index_sequence<I...>) {
         (void(tuple_elem<I, T>::value = get<I>(std::forward<U>(u))), ...);
     }
+    template <class... U, class... B>
+    constexpr void assign_impl(type_list<B...>, U&&... u) {
+        (void(B::value = std::forward<U>(u)), ...);
+    }
 };
 template <>
 struct tuple<> : tuple_base_t<> {
     constexpr static size_t N = 0;
     using super = tuple_base_t<>;
-    using base_list = typename super::base_list;
+    using base_list = type_list<>;
+    using element_list = type_list<>;
 
     template <other_than<tuple> U> // Preserves default assignments
     requires stateless<U>          // Check that U is similarly stateless
@@ -244,18 +285,22 @@ struct convert {
     using base_list = typename std::decay_t<Tuple>::base_list;
     Tuple tuple;
     template <class U>
-    constexpr operator U() const {
-        return detail::convert_impl<U>((tuple), base_list());
+    constexpr operator U() && {
+        return convert_impl<U>(base_list {});
     }
-    template <class U>
-    constexpr operator U() {
-        return detail::convert_impl<U>((std::move(*this).tuple), base_list());
+
+   private:
+    template <class U, class... Bases>
+    constexpr U convert_impl(type_list<Bases...>) {
+        return U {std::forward<Tuple>(tuple).identity_t<Bases>::value...};
     }
 };
 template <class Tuple>
 convert(Tuple&) -> convert<Tuple&>;
 template <class Tuple>
-convert(Tuple&&) -> convert<Tuple&>;
+convert(Tuple const&) -> convert<Tuple const&>;
+template <class Tuple>
+convert(Tuple&&) -> convert<Tuple>;
 } // namespace tuplet
 
 // tuplet::get implementation
@@ -290,6 +335,41 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B> const& pair) {
 template <class F, class A, class B>
 constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
     return std::forward<F>(func)(std::move(pair).first, std::move(pair).second);
+}
+} // namespace tuplet
+
+// tuple cat
+namespace tuplet::tuple_plus {
+template <class T1, class T2>
+constexpr auto operator+(T1&& t1, T2&& t2) {
+    return detail::tuple_plus_impl(
+        std::forward<T1>(t1),
+        std::forward<T2>(t2),
+        element_list_t<T1>(),
+        element_list_t<T2>(),
+        base_list_t<T1>(),
+        base_list_t<T2>());
+}
+} // namespace tuplet::tuple_plus
+
+namespace tuplet {
+template <class... Ts>
+constexpr auto tuple_cat(Ts&&... ts) {
+    using tuple_plus::operator+;
+    if constexpr (sizeof...(Ts) == 0) {
+        return tuple<> {};
+    } else {
+#if defined(__clang__)
+        if constexpr(sizeof...(Ts) == 1) {
+            // This should just evaluate to the first and only element of the sequence
+            return (std::forward<Ts>(ts) , ...);
+        } else {
+            return detail::tuple_cat_recurse(std::forward<Ts>(ts)...);
+        }
+#else
+        return (std::forward<Ts>(ts) + ...);
+#endif
+    }
 }
 } // namespace tuplet
 
