@@ -118,10 +118,6 @@ struct get_tuple_base<std::index_sequence<I...>, T...> {
     using type = type_map<tuple_elem<I, T>...>;
 };
 
-template <class Out, class In, class... Bases>
-constexpr Out convert_impl(In&& in, type_list<Bases...>) {
-    return Out {std::forward<In>(in).identity_t<Bases>::value...};
-}
 template <class F, class Tup, class... Bases>
 constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
     return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
@@ -244,18 +240,22 @@ struct convert {
     using base_list = typename std::decay_t<Tuple>::base_list;
     Tuple tuple;
     template <class U>
-    constexpr operator U() const {
-        return detail::convert_impl<U>((tuple), base_list());
+    constexpr operator U() && {
+        return convert_impl<U>(base_list {});
     }
-    template <class U>
-    constexpr operator U() {
-        return detail::convert_impl<U>((std::move(*this).tuple), base_list());
+
+   private:
+    template <class U, class... Bases>
+    constexpr U convert_impl(type_list<Bases...>) {
+        return U {std::forward<Tuple>(tuple).identity_t<Bases>::value...};
     }
 };
 template <class Tuple>
 convert(Tuple&) -> convert<Tuple&>;
 template <class Tuple>
-convert(Tuple&&) -> convert<Tuple&>;
+convert(Tuple const&) -> convert<Tuple const&>;
+template <class Tuple>
+convert(Tuple&&) -> convert<Tuple>;
 } // namespace tuplet
 
 // tuplet::get implementation
