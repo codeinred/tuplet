@@ -68,5 +68,13 @@ int main() {
     static_assert(
         std::is_trivially_move_assignable_v<tuple_B>,
         "A tuple should be trivially move assignable if the members are");
+
+    static_assert(
+        std::is_trivial_v<tuple_A>,
+        "A tuple should be trivial if it's members are.");
+    static_assert(
+        std::is_trivial_v<tuple_B>,
+        "A tuple should be trivial if it's members are.");
+
     return 0;
 }
