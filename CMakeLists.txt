@@ -35,6 +35,13 @@ if(PROJECT_IS_TOP_LEVEL)
     # threads
     add_test_dir(test tuplet Threads::Threads)
 
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(
+            test_test-kilo-tuple
+            PRIVATE
+            -fbracket-depth=1000)
+    endif()
+
     set(BENCHMARK_ENABLE_TESTING OFF)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
     set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF)
