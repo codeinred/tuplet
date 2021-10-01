@@ -147,7 +147,7 @@ constexpr auto tuple_plus_impl(
         std::forward<T1>(t1).identity_t<B1>::value...,
         std::forward<T2>(t2).identity_t<B2>::value...};
 }
-#if defined(__clang__) && __clang_major__ < 12
+#if defined(__clang__)
 template <class T1, class T2, class... T3>
 constexpr auto tuple_cat_recurse(T1&& t1, T2&& t2, T3&&... t3) {
     if constexpr (sizeof...(t3) == 0) {
@@ -359,7 +359,7 @@ constexpr auto tuple_cat(Ts&&... ts) {
     if constexpr (sizeof...(Ts) == 0) {
         return tuple<> {};
     } else {
-#if defined(__clang__) && __clang_major__ < 12
+#if defined(__clang__)
         if constexpr(sizeof...(Ts) == 1) {
             // This should just evaluate to the first and only element of the sequence
             return (std::forward<Ts>(ts) , ...);
