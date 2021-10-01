@@ -1,8 +1,20 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(tuplet CXX)
-add_library(tuplet INTERFACE)
+project(
+  "tuplet"
+  VERSION 0.9.0
+  DESCRIPTION "Tuple implementation for modern C++"
+  HOMEPAGE_URL "https://github.com/codeinred/tuplet/"
+  LANGUAGES CXX
+)
 
+add_library(tuplet INTERFACE)
+add_library(tuplet::tuplet ALIAS tuplet)
+
+# For ${CMAKE_INSTALL_<DIR>} variables that are standarized
+include(GNUInstallDirs)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 target_compile_features(
@@ -14,17 +26,52 @@ target_compile_features(
 target_include_directories(
     tuplet
     INTERFACE
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/>
-    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# Installation
+# See: https://dominikberner.ch/cmake-interface-lib/
+
+install(
+  TARGETS tuplet
+  EXPORT tuplet_Targets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "tupletConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+  "${PROJECT_SOURCE_DIR}/cmake/tupletConfig.cmake.in"
+  "${PROJECT_BINARY_DIR}/tupletConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/tuplet/cmake
 )
 
 install(
-    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-    DESTINATION include
+  EXPORT tuplet_Targets
+  FILE tupletTargets.cmake
+  NAMESPACE tuplet::
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/tuplet/cmake
+)
+
+install(FILES "${PROJECT_BINARY_DIR}/tupletConfig.cmake"
+              "${PROJECT_BINARY_DIR}/tupletConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/tuplet/cmake
+)
+
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/tuplet
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 
-include(${PROJECT_SOURCE_DIR}/helper.cmake)
+include(helper)
 if(PROJECT_IS_TOP_LEVEL)
     include(CTest)
 
