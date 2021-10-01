@@ -190,13 +190,9 @@ struct tuple<> : tuple_base_t<> {
 
     template <other_than<tuple> U> // Preserves default assignments
     requires stateless<U>          // Check that U is similarly stateless
-    constexpr auto& operator=(U&& tup) noexcept {
-        return *this;
-    }
+    constexpr auto& operator=(U&& tup) noexcept { return *this; }
 
-    constexpr auto& assign() noexcept {
-        return *this;
-    }
+    constexpr auto& assign() noexcept { return *this; }
 };
 template <class... T>
 tuple(T...) -> tuple<deduce_elem_t<T>...>;
@@ -299,14 +295,11 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
 
 // tuplet literals
 namespace tuplet::literals {
-// clang-format off
-template <char... D> using index_t = tag<detail::size_t_from_digits<D...>()>;
-template <char... D> constexpr index_t<D...> operator""_tag() { return {}; }
-template <char... D> constexpr index_t<D...> operator""_st() { return {}; }
-template <char... D> constexpr index_t<D...> operator""_nd() { return {}; }
-template <char... D> constexpr index_t<D...> operator""_rd() { return {}; }
-template <char... D> constexpr index_t<D...> operator""_th() { return {}; }
-// clang-format on
+template <char... D>
+constexpr auto operator""_tag() noexcept
+    -> tag<detail::size_t_from_digits<D...>()> {
+    return {};
+}
 } // namespace tuplet::literals
 
 // std::tuple_size specialization

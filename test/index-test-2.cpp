@@ -20,8 +20,8 @@ int main() {
         std::is_same_v<std::tuple_element_t<2, decltype(tup)>, std::string>,
         "Expected std::string& at element 2");
 
-    auto& a = tup[0_th];
-    auto& b = tup[1_st];
-    auto& c = tup[2_nd];
+    auto& a = tup[0_tag];
+    auto& b = tup[1_tag];
+    auto& c = tup[2_tag];
     return !is_good(a, b, c);
 }

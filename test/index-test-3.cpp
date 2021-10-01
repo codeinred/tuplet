@@ -26,9 +26,9 @@ int main() {
         std::is_same_v<std::tuple_element_t<2, decltype(tup)>, std::string>,
         "Expected std::string& at element 2");
 
-    auto a = tup[0_th];
-    auto b = std::move(tup)[1_st]; // Check that when a tuple is moved, the
+    auto a = tup[0_tag];
+    auto b = std::move(tup)[1_tag]; // Check that when a tuple is moved, the
                                    // indicies are moved too
-    auto c = tup[2_nd];
+    auto c = tup[2_tag];
     return !is_good(a, *b, c);
 }

@@ -46,38 +46,35 @@ std::cout << get<2>(tup) << std::endl; // Prints "Hello, world!"
 Or via `operator[]`:
 
 ```cpp
-std::cout << tup[tuplet::index<2>()] << std::endl; // Prints "Hello, world!"
+using tuplet::tag;
+std::cout << tup[tag<2>()] << std::endl; // Prints "Hello, world!"
 ```
 
-Something that's important to note is that `index` is just an alias for
+Something that's important to note is that `tag` is just an alias for
 `std::integral_constant`:
 
 ```cpp
 template <size_t I>
-using index = std::integral_constant<size_t, I>;
+using tag = std::integral_constant<size_t, I>;
 ```
 
 ### Use Index Literals for Clean, Easy Access
 
-You can access elements of a tuple very cleanly by using the literals provided
-in `tuplet::literals`! This namespace defines the literal operators `_st`,`_nd`,
-`_rd`, and `_th`, which take number and produce a `tuplet::index` templated on
-that number, so `0_th` evaluates to `tuplet::index<0>()`, `1_st` evaluates to
-`tuplet::index<1>()`, and so on!
+You can access elements of a tuple very cleanly by using the `_tag` literal
+provided in `tuplet::literals`! This namespace defines the literal operator
+`_tag`, which take number and produce a `tuplet::tag` templated on that number,
+so `0_tag` evaluates to `tuplet::tag<0>()`, `1_tag` evaluates to
+`tuplet::tag<1>()`, and so on!
 
 ```cpp
 using namespace tuplet::literals;
 
 tuplet::tuple tup = {1, 2, std::string("Hello, world!")};
 
-std::cout << tup[0_th] << std::endl; // Prints 1
-std::cout << tup[1_st] << std::endl; // Prints 2
-std::cout << tup[2_nd] << std::endl; // Prints Hello World
+std::cout << tup[0_tag] << std::endl; // Prints 1
+std::cout << tup[1_tag] << std::endl; // Prints 2
+std::cout << tup[2_tag] << std::endl; // Prints Hello World
 ```
-
-You don't need to match the ending. These literals are defined on a numeric
-literal operator template, so any number works for them. `999999_th` will give
-you `tuplet::index<999999>`.
 
 ### Decompose tuples via Structured Bindings
 
