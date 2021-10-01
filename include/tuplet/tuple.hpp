@@ -323,6 +323,7 @@ constexpr auto operator+(T1&& t1, T2&& t2) {
 namespace tuplet {
 template <class... Ts>
 constexpr auto tuple_cat(Ts&&... ts) {
+    using tuple_plus::operator+;
     if constexpr(sizeof...(Ts) == 0) {
         return tuple<>{};
     } else {
