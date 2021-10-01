@@ -344,7 +344,7 @@ namespace tuplet {
 template <typename... Ts>
 constexpr auto make_tuple(Ts&&... args)
 {
-    return tuplet::tuple<std::unwrap_ref_decay_t<Ts>...> { std::forward<Ts>(args)... };
+    return tuplet::tuple<typename std::unwrap_ref_decay<Ts>::type...> { std::forward<Ts>(args)... };
 }
 
 template <typename... T>
