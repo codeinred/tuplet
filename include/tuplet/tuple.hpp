@@ -299,6 +299,38 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
 }
 } // namespace tuplet
 
+// tuple cat
+namespace tuplet::tuple_plus {
+template <class T1, class T2>
+constexpr auto operator+(T1&& t1, T2&& t2) {
+    return [&]<class... E1, class... E2, class... B1, class... B2>(
+               type_list<E1...>,
+               type_list<E2...>,
+               type_list<B1...>,
+               type_list<B2...>)
+        ->tuple<E1..., E2...> {
+        return {
+            std::forward<T1>(t1).identity_t<B1>::value...,
+            std::forward<T2>(t2).identity_t<B2>::value...};
+    }
+    (element_list_t<T1>(),
+     element_list_t<T2>(),
+     base_list_t<T1>(),
+     base_list_t<T2>());
+}
+} // namespace tuplet::tuple_plus
+
+namespace tuplet {
+template <class... Ts>
+constexpr auto tuple_cat(Ts&&... ts) {
+    if constexpr(sizeof...(Ts) == 0) {
+        return tuple<>{};
+    } else {
+        return (std::forward<Ts>(ts) + ...);
+    }
+}
+}
+
 // tuplet literals
 namespace tuplet::literals {
 template <char... D>
