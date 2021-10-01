@@ -114,7 +114,7 @@ using deduce_elem_t = typename deduce_elem<T>::type;
 
 // tuplet::detail::get_tuple_base implementation
 // tuplet::detail::apply_impl
-// tuplet::detail::tuple_plus_impl
+// tuplet::detail::cat2_impl
 // tuplet::detail::size_t_from_digits
 namespace tuplet::detail {
 template <class A, class... T>
@@ -129,42 +129,18 @@ template <class F, class Tup, class... Bases>
 constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
     return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
 }
-template <
-    class T1,
-    class T2,
-    class... E1,
-    class... E2,
-    class... B1,
-    class... B2>
-constexpr auto tuple_plus_impl(
-    T1&& t1,
-    T2&& t2,
+template <class T, class U, class... E1, class... E2, class... B1, class... B2>
+constexpr auto cat2_impl(
+    T&& t1,
+    U&& t2,
     type_list<E1...>,
     type_list<E2...>,
     type_list<B1...>,
     type_list<B2...>) -> tuple<E1..., E2...> {
     return {
-        std::forward<T1>(t1).identity_t<B1>::value...,
-        std::forward<T2>(t2).identity_t<B2>::value...};
+        std::forward<T>(t1).identity_t<B1>::value...,
+        std::forward<U>(t2).identity_t<B2>::value...};
 }
-#if defined(__clang__)
-template <class T1, class T2, class... T3>
-constexpr auto tuple_cat_recurse(T1&& t1, T2&& t2, T3&&... t3) {
-    if constexpr (sizeof...(t3) == 0) {
-        return tuple_plus_impl(
-            std::forward<T1>(t1),
-            std::forward<T2>(t2),
-            element_list_t<T1>(),
-            element_list_t<T2>(),
-            base_list_t<T1>(),
-            base_list_t<T2>());
-    } else {
-        return tuple_cat_recurse(
-            std::forward<T1>(t1),
-            tuple_cat_recurse(std::forward<T2>(t2), std::forward<T3>(t3)...));
-    }
-}
-#endif
 template <char... D>
 constexpr size_t size_t_from_digits() {
     static_assert((('0' <= D && D <= '9') && ...), "Must be integral literal");
@@ -338,11 +314,15 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
 }
 } // namespace tuplet
 
-// tuple cat
-namespace tuplet::tuple_plus {
-template <class T1, class T2>
-constexpr auto operator+(T1&& t1, T2&& t2) {
-    return detail::tuple_plus_impl(
+namespace tuplet {
+constexpr tuple<> tuple_cat() { return {}; }
+template <base_list_tuple T>
+constexpr auto tuple_cat(T&& t) {
+    return std::forward<T>(t);
+}
+template <base_list_tuple T1, base_list_tuple T2>
+constexpr auto tuple_cat(T1&& t1, T2&& t2) {
+    return detail::cat2_impl(
         std::forward<T1>(t1),
         std::forward<T2>(t2),
         element_list_t<T1>(),
@@ -350,26 +330,9 @@ constexpr auto operator+(T1&& t1, T2&& t2) {
         base_list_t<T1>(),
         base_list_t<T2>());
 }
-} // namespace tuplet::tuple_plus
-
-namespace tuplet {
-template <class... Ts>
-constexpr auto tuple_cat(Ts&&... ts) {
-    using tuple_plus::operator+;
-    if constexpr (sizeof...(Ts) == 0) {
-        return tuple<> {};
-    } else {
-#if defined(__clang__)
-        if constexpr(sizeof...(Ts) == 1) {
-            // This should just evaluate to the first and only element of the sequence
-            return (std::forward<Ts>(ts) , ...);
-        } else {
-            return detail::tuple_cat_recurse(std::forward<Ts>(ts)...);
-        }
-#else
-        return (std::forward<Ts>(ts) + ...);
-#endif
-    }
+template <base_list_tuple T1, base_list_tuple... T2>
+constexpr auto tuple_cat(T1&& t1, T2&&... t2) {
+    return tuple_cat(std::forward<T1>(t1), tuple_cat(std::forward<T2>(t2)...));
 }
 } // namespace tuplet
 
