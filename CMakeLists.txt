@@ -4,8 +4,12 @@ project(tuplet CXX)
 add_library(tuplet INTERFACE)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED 20)
+
+target_compile_features(
+    tuplet
+    INTERFACE
+    cxx_std_20
+)
 
 target_include_directories(
     tuplet
@@ -30,6 +34,13 @@ if(PROJECT_IS_TOP_LEVEL)
     # Add all files in directory test as tests, and link against tuplet and
     # threads
     add_test_dir(test tuplet Threads::Threads)
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(
+            test_test-kilo-tuple
+            PRIVATE
+            -fbracket-depth=1000)
+    endif()
 
     set(BENCHMARK_ENABLE_TESTING OFF)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
