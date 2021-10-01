@@ -332,7 +332,9 @@ constexpr auto tuple_cat(T1&& t1, T2&& t2) {
 }
 template <base_list_tuple T1, base_list_tuple... T2>
 constexpr auto tuple_cat(T1&& t1, T2&&... t2) {
-    return tuple_cat(std::forward<T1>(t1), tuple_cat(std::forward<T2>(t2)...));
+    return tuplet::tuple_cat(
+        std::forward<T1>(t1),
+        tuplet::tuple_cat(std::forward<T2>(t2)...));
 }
 } // namespace tuplet
 
