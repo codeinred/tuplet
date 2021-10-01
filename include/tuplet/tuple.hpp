@@ -33,13 +33,6 @@ concept same_as = std::is_same_v<T, U>&& std::is_same_v<U, T>;
 template <class T, class U>
 concept other_than = !std::is_same_v<std::decay_t<T>, U>;
 
-template <class Wrapper>
-concept wrapper = requires(Wrapper w) {
-    typename Wrapper::type;
-    { w.get() }
-    ->same_as<typename Wrapper::type&>;
-    (typename Wrapper::type&)(w);
-};
 template <class Tup>
 using base_list_t = typename std::decay_t<Tup>::base_list;
 template <class Tup>
@@ -99,17 +92,8 @@ struct tuple_elem {
         return (std::move(*this).value);
     }
 };
-
 template <class T>
-struct deduce_elem {
-    using type = T;
-};
-template <wrapper T>
-struct deduce_elem<T> {
-    using type = typename T::type&;
-};
-template <class T>
-using deduce_elem_t = typename deduce_elem<T>::type;
+using unwrap_ref_decay_t = typename std::unwrap_ref_decay<T>::type;
 } // namespace tuplet
 
 // tuplet::detail::get_tuple_base implementation
@@ -211,8 +195,8 @@ struct tuple<> : tuple_base_t<> {
 
     constexpr auto& assign() noexcept { return *this; }
 };
-template <class... T>
-tuple(T...) -> tuple<deduce_elem_t<T>...>;
+template <class... Ts>
+tuple(Ts...) -> tuple<unwrap_ref_decay_t<Ts>...>;
 } // namespace tuplet
 
 // tuplet::pair implementation
@@ -250,7 +234,7 @@ struct pair {
     }
 };
 template <class A, class B>
-pair(A, B) -> pair<deduce_elem_t<A>, deduce_elem_t<B>>;
+pair(A, B) -> pair<unwrap_ref_decay_t<A>, unwrap_ref_decay_t<B>>;
 } // namespace tuplet
 
 // tuplet::convert implementation
@@ -342,15 +326,13 @@ constexpr auto tuple_cat(T1&& t1, T2&&... t2) {
 // tuplet::forward_as_tuple implementation
 namespace tuplet {
 template <typename... Ts>
-constexpr auto make_tuple(Ts&&... args)
-{
-    return tuplet::tuple<typename std::unwrap_ref_decay<Ts>::type...> { std::forward<Ts>(args)... };
+constexpr auto make_tuple(Ts&&... args) {
+    return tuplet::tuple<unwrap_ref_decay_t<Ts>...> {std::forward<Ts>(args)...};
 }
 
 template <typename... T>
-constexpr auto forward_as_tuple(T&&... a) noexcept
-{
-    return tuple<T&&...> { std::forward<T>(a)... };
+constexpr auto forward_as_tuple(T&&... a) noexcept {
+    return tuple<T&&...> {std::forward<T>(a)...};
 }
 } // namespace tuplet
 
