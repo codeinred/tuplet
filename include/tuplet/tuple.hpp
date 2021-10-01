@@ -36,6 +36,10 @@ concept wrapper = requires(Wrapper w) {
     ->same_as<typename Wrapper::type&>;
     (typename Wrapper::type&)(w);
 };
+template <class Tup>
+using base_list_t = typename std::decay_t<Tup>::base_list;
+template <class Tup>
+using element_list_t = typename std::decay_t<Tup>::element_list;
 
 template <class Tuple>
 concept base_list_tuple = requires() {
@@ -150,6 +154,7 @@ struct tuple : tuple_base_t<T...> {
     using super = tuple_base_t<T...>;
     using super::operator[];
     using base_list = typename super::base_list;
+    using element_list = type_list<T...>;
     using super::decl_elem;
 
     template <other_than<tuple> U> // Preserves default assignments
@@ -186,7 +191,8 @@ template <>
 struct tuple<> : tuple_base_t<> {
     constexpr static size_t N = 0;
     using super = tuple_base_t<>;
-    using base_list = typename super::base_list;
+    using base_list = type_list<>;
+    using element_list = type_list<>;
 
     template <other_than<tuple> U> // Preserves default assignments
     requires stateless<U>          // Check that U is similarly stateless
