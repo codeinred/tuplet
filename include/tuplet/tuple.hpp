@@ -364,7 +364,7 @@ constexpr auto tuple_cat(Ts&&... ts) {
             // This should just evaluate to the first and only element of the sequence
             return (std::forward<Ts>(ts) , ...);
         } else {
-            detail::tuple_cat_recurse(std::forward<Ts>(ts)...);
+            return detail::tuple_cat_recurse(std::forward<Ts>(ts)...);
         }
 #else
         return (std::forward<Ts>(ts) + ...);
