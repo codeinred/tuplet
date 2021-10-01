@@ -1,10 +1,10 @@
 #ifndef TUPLET_TUPLET_HPP_IMPLEMENTATION
 #define TUPLET_TUPLET_HPP_IMPLEMENTATION
 
+#include <compare>
 #include <cstddef>
 #include <type_traits>
 #include <utility>
-#include <compare>
 
 // tuplet convenience types
 namespace tuplet {
@@ -43,6 +43,9 @@ template <class Tuple>
 concept base_list_tuple = requires() {
     typename std::decay_t<Tuple>::base_list;
 };
+
+template <class T>
+concept reference = std::is_reference_v<T>;
 
 template <class T>
 concept stateless = std::is_empty_v<std::decay_t<T>>;
@@ -96,6 +99,15 @@ struct tuple_elem {
     }
     auto operator<=>(tuple_elem const&) const = default;
     bool operator==(tuple_elem const&) const = default;
+    // Implements comparison for tuples containing reference types
+    constexpr auto operator<=>(tuple_elem const& other) const
+        requires(reference<T>) {
+        return value <=> other.value;
+    }
+    constexpr bool operator==(tuple_elem const& other) const
+        requires(reference<T>) {
+        return value == other.value;
+    }
 };
 template <class T>
 using unwrap_ref_decay_t = typename std::unwrap_ref_decay<T>::type;
@@ -175,6 +187,7 @@ struct tuple : tuple_base_t<T...> {
 
     auto operator<=>(tuple const&) const = default;
     bool operator==(tuple const&) const = default;
+
    private:
     template <class U, class... B1, class... B2>
     constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
