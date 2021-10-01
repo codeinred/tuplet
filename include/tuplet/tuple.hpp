@@ -105,9 +105,7 @@ using deduce_elem_t = typename deduce_elem<T>::type;
 } // namespace tuplet
 
 // tuplet::detail::get_tuple_base implementation
-// tuplet::detail::convert_impl
 // tuplet::detail::apply_impl
-// tuplet::detail::assign_impl
 // tuplet::detail::size_t_from_digits
 namespace tuplet::detail {
 template <class A, class... T>
