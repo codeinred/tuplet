@@ -147,6 +147,24 @@ constexpr auto tuple_plus_impl(
         std::forward<T1>(t1).identity_t<B1>::value...,
         std::forward<T2>(t2).identity_t<B2>::value...};
 }
+#if defined(__clang__) && __clang_major__ < 12
+template <class T1, class T2, class... T3>
+constexpr auto tuple_cat_recurse(T1&& t1, T2&& t2, T3&&... t3) {
+    if constexpr (sizeof...(t3) == 0) {
+        return tuple_plus_impl(
+            std::forward<T1>(t1),
+            std::forward<T2>(t2),
+            element_list_t<T1>(),
+            element_list_t<T2>(),
+            base_list_t<T1>(),
+            base_list_t<T2>());
+    } else {
+        return tuple_cat_recurse(
+            std::forward<T1>(t1),
+            tuple_cat_recurse(std::forward<T2>(t2), std::forward<T3>(t3)...));
+    }
+}
+#endif
 template <char... D>
 constexpr size_t size_t_from_digits() {
     static_assert((('0' <= D && D <= '9') && ...), "Must be integral literal");
@@ -341,7 +359,16 @@ constexpr auto tuple_cat(Ts&&... ts) {
     if constexpr (sizeof...(Ts) == 0) {
         return tuple<> {};
     } else {
+#if defined(__clang__) && __clang_major__ < 12
+        if constexpr(sizeof...(Ts) == 1) {
+            // This should just evaluate to the first and only element of the sequence
+            return (std::forward<Ts>(ts) , ...);
+        } else {
+            detail::tuple_cat_recurse(std::forward<Ts>(ts)...);
+        }
+#else
         return (std::forward<Ts>(ts) + ...);
+#endif
     }
 }
 } // namespace tuplet
