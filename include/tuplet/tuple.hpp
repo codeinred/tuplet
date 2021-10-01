@@ -76,6 +76,8 @@ struct type_map : Bases... {
     using base_list = type_list<Bases...>;
     using Bases::operator[]...;
     using Bases::decl_elem...;
+    auto operator<=>(type_map const&) const = default;
+    bool operator==(type_map const&) const = default;
 };
 
 template <size_t I, class T>
@@ -91,6 +93,8 @@ struct tuple_elem {
     constexpr decltype(auto) operator[](tag<I>) && {
         return (std::move(*this).value);
     }
+    auto operator<=>(tuple_elem const&) const = default;
+    bool operator==(tuple_elem const&) const = default;
 };
 template <class T>
 using unwrap_ref_decay_t = typename std::unwrap_ref_decay<T>::type;
@@ -168,6 +172,8 @@ struct tuple : tuple_base_t<T...> {
         return *this;
     }
 
+    auto operator<=>(tuple const&) const = default;
+    bool operator==(tuple const&) const = default;
    private:
     template <class U, class... B1, class... B2>
     constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
@@ -194,6 +200,8 @@ struct tuple<> : tuple_base_t<> {
     constexpr auto& operator=(U&& tup) noexcept { return *this; }
 
     constexpr auto& assign() noexcept { return *this; }
+    auto operator<=>(tuple const&) const = default;
+    bool operator==(tuple const&) const = default;
 };
 template <class... Ts>
 tuple(Ts...) -> tuple<unwrap_ref_decay_t<Ts>...>;
@@ -232,6 +240,8 @@ struct pair {
         second = std::forward<S2>(s);
         return *this;
     }
+    auto operator<=>(pair const&) const = default;
+    bool operator==(pair const&) const = default;
 };
 template <class A, class B>
 pair(A, B) -> pair<unwrap_ref_decay_t<A>, unwrap_ref_decay_t<B>>;
