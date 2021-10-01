@@ -45,9 +45,6 @@ concept base_list_tuple = requires() {
 };
 
 template <class T>
-concept reference = std::is_reference_v<T>;
-
-template <class T>
 concept stateless = std::is_empty_v<std::decay_t<T>>;
 
 template <class T>
@@ -63,6 +60,15 @@ concept tuple_type = indexable<T> || requires(T t) {
 template <class U, class T>
 concept assignable_to = requires(U u, T t) {
     t = u;
+};
+
+template <class T>
+concept ordered = requires(T const& t) {
+    {t <=> t};
+};
+template <class T>
+concept equality_comparable = requires(T const& t) {
+    { t == t } -> same_as<bool>;
 };
 // clang-format on
 } // namespace tuplet
@@ -101,11 +107,13 @@ struct tuple_elem {
     bool operator==(tuple_elem const&) const = default;
     // Implements comparison for tuples containing reference types
     constexpr auto operator<=>(tuple_elem const& other) const
-        requires(reference<T>) {
+        noexcept(noexcept(value <=> other.value))
+        requires(std::is_reference_v<T> && ordered<T>) {
         return value <=> other.value;
     }
     constexpr bool operator==(tuple_elem const& other) const
-        requires(reference<T>) {
+        noexcept(noexcept(value == other.value))
+        requires(std::is_reference_v<T> && equality_comparable<T>) {
         return value == other.value;
     }
 };
