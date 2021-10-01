@@ -338,6 +338,22 @@ constexpr auto tuple_cat(T1&& t1, T2&&... t2) {
 }
 } // namespace tuplet
 
+// tuplet::make_tuple implementation
+// tuplet::forward_as_tuple implementation
+namespace tuplet {
+template <typename... Ts>
+constexpr auto make_tuple(Ts&&... args)
+{
+    return tuplet::tuple<typename std::unwrap_ref_decay<Ts>::type...> { std::forward<Ts>(args)... };
+}
+
+template <typename... T>
+constexpr auto forward_as_tuple(T&&... a) noexcept
+{
+    return tuple<T&&...> { std::forward<T>(a)... };
+}
+} // namespace tuplet
+
 // tuplet literals
 namespace tuplet::literals {
 template <char... D>
