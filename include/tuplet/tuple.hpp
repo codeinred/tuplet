@@ -122,10 +122,6 @@ template <class F, class Tup, class... Bases>
 constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
     return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
 }
-template <class T, class... U, class... B>
-constexpr void assign_impl(T&& tup, type_list<B...>, U&&... u) {
-    (void(tup.identity_t<B>::value = std::forward<U>(u)), ...);
-}
 template <char... D>
 constexpr size_t size_t_from_digits() {
     static_assert((('0' <= D && D <= '9') && ...), "Must be integral literal");
@@ -164,7 +160,7 @@ struct tuple : tuple_base_t<T...> {
 
     template <assignable_to<T>... U>
     constexpr auto& assign(U&&... values) {
-        detail::assign_impl(*this, base_list(), std::forward<U>(values)...);
+        assign_impl(base_list(), std::forward<U>(values)...);
         return *this;
     }
 
@@ -176,6 +172,10 @@ struct tuple : tuple_base_t<T...> {
     template <class U, size_t... I>
     constexpr void eq_impl(U&& u, std::index_sequence<I...>) {
         (void(tuple_elem<I, T>::value = get<I>(std::forward<U>(u))), ...);
+    }
+    template <class... U, class... B>
+    constexpr void assign_impl(type_list<B...>, U&&... u) {
+        (void(B::value = std::forward<U>(u)), ...);
     }
 };
 template <>
