@@ -4,8 +4,12 @@ project(tuplet CXX)
 add_library(tuplet INTERFACE)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED 20)
+
+target_compile_features(
+    tuplet
+    INTERFACE
+    cxx_std_20
+)
 
 target_include_directories(
     tuplet
