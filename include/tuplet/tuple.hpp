@@ -43,7 +43,7 @@ concept base_list_tuple = requires() {
 };
 
 template <class T>
-concept stateless = std::is_empty_v<T>;
+concept stateless = std::is_empty_v<std::decay_t<T>>;
 
 template <class T>
 concept indexable = stateless<T> || requires(T t) {
@@ -180,6 +180,22 @@ struct tuple : tuple_base_t<T...> {
     template <class U, size_t... I>
     constexpr void eq_impl(U&& u, std::index_sequence<I...>) {
         (void(tuple_elem<I, T>::value = get<I>(std::forward<U>(u))), ...);
+    }
+};
+template <>
+struct tuple<> : tuple_base_t<> {
+    constexpr static size_t N = 0;
+    using super = tuple_base_t<>;
+    using base_list = typename super::base_list;
+
+    template <other_than<tuple> U> // Preserves default assignments
+    requires stateless<U>          // Check that U is similarly stateless
+    constexpr auto& operator=(U&& tup) noexcept {
+        return *this;
+    }
+
+    constexpr auto& assign() noexcept {
+        return *this;
     }
 };
 template <class... T>
