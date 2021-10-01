@@ -161,6 +161,67 @@ auto print = [](auto&... args) {
 apply(print, tuplet::tuple{1, 2, "Hello, world!"});
 ```
 
+## Installation
+
+Tuplet can now be installed as a CMake package!
+
+```bash
+git clone https://github.com/codeinred/tuplet.git
+cd tuplet
+cmake -B build -DCMAKE_INSTALL_PREFIX="/path/to/install"
+cmake --build build
+cmake --build build --target install
+```
+
+If you're installing tuplet globally, you may have to run the final command with
+sudo:
+
+```bash
+# Global install
+git clone https://github.com/codeinred/tuplet.git
+cd tuplet
+cmake -B build
+cmake --build build
+sudo cmake --build build --target install
+```
+
+This will attempt to build tests. If the default system compiler doesn't support
+C++20 and buliding fails, you can use an alternative compiler by specifying
+`-DCMAKE_CXX_COMPILER` during the configuration step:
+
+```bash
+cmake -B build -DCMAKE_CXX_COMPILER=g++-11
+```
+
+Alternatively, on newer versions of CMake (e.g, cmake 3.15 and above), you can
+skip the build step entirely.
+[See this documentation for more information.](https://cmake.org/cmake/help/v3.15/manual/cmake.1.html#install-a-project)
+
+```bash
+git clone https://github.com/codeinred/tuplet.git
+cd tuplet
+cmake -B build
+sudo cmake --install build
+# Or:
+cmake --install build --prefix "/path/to/install"
+```
+
+Once tuplet is installed, it can now be discovered via `find_package`, and
+targeted via `target_link_libraries`. It's a header-only library, but this will
+ensure that tuplet's directory is added to the include path.
+
+```cmake
+cmake_minimum_required(VERSION 3.14)
+
+project(my_project LANGUAGES CXX)
+
+find_package(tuplet REQUIRED)
+
+add_executable(main)
+target_sources(main PRIVATE main.cpp)
+target_link_libraries(main PRIVATE tuplet::tuplet)
+```
+
 ## Motivation
 
 This section intends to address a single fundamental question: _Why would I use
