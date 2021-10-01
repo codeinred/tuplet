@@ -84,7 +84,7 @@ if(PROJECT_IS_TOP_LEVEL)
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(
-            test_test-kilo-tuple
+            test_kilo_tuple
             PRIVATE
             -fbracket-depth=1000)
     endif()
