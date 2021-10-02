@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
 
 project(
-  "tuplet"
-  VERSION 0.9.0
-  DESCRIPTION "Tuple implementation for modern C++"
-  HOMEPAGE_URL "https://github.com/codeinred/tuplet/"
-  LANGUAGES CXX
+    "tuplet"
+    VERSION 0.9.0
+    DESCRIPTION "A Lightweight Tuple Implementation for Modern C++"
+    HOMEPAGE_URL "https://github.com/codeinred/tuplet/"
+    LANGUAGES CXX
 )
 
 add_library(tuplet INTERFACE)
@@ -34,31 +34,31 @@ target_include_directories(
 # See: https://dominikberner.ch/cmake-interface-lib/
 
 install(
-  TARGETS tuplet
-  EXPORT tuplet_Targets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    TARGETS tuplet
+    EXPORT tuplet_Targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-  "tupletConfigVersion.cmake"
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion
+    "tupletConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
 )
 
 configure_package_config_file(
-  "${PROJECT_SOURCE_DIR}/cmake/tupletConfig.cmake.in"
-  "${PROJECT_BINARY_DIR}/tupletConfig.cmake"
-  INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/tuplet/cmake
+    "${PROJECT_SOURCE_DIR}/cmake/tupletConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/tupletConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/tuplet/cmake
 )
 
 install(
-  EXPORT tuplet_Targets
-  FILE tupletTargets.cmake
-  NAMESPACE tuplet::
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/tuplet/cmake
+    EXPORT tuplet_Targets
+    FILE tupletTargets.cmake
+    NAMESPACE tuplet::
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/tuplet/cmake
 )
 
 install(FILES "${PROJECT_BINARY_DIR}/tupletConfig.cmake"
