@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <utility>
 
-// tuplet convenience types
+// tuplet concepts and traits
 namespace tuplet {
 template <class T>
 using identity_t = T;
@@ -20,16 +20,8 @@ constexpr tag<I> tag_v {};
 template <size_t N>
 using tag_range = std::make_index_sequence<N>;
 
-// tuple needs to be forward-declared for use in tuplet_plus_impl
-template <class... T>
-struct tuple;
-} // namespace tuplet
-
-// tuplet concepts
-namespace tuplet {
-// clang-format off
 template <class T, class U>
-concept same_as = std::is_same_v<T, U>&& std::is_same_v<U, T>;
+concept same_as = std::is_same_v<T, U> && std::is_same_v<U, T>;
 
 template <class T, class U>
 concept other_than = !std::is_same_v<std::decay_t<T>, U>;
@@ -52,11 +44,6 @@ concept indexable = stateless<T> || requires(T t) {
     t[tag<0>()];
 };
 
-template <class T>
-concept tuple_type = indexable<T> || requires(T t) {
-    get<0>(t);
-};
-
 template <class U, class T>
 concept assignable_to = requires(U u, T t) {
     t = u;
@@ -70,14 +57,17 @@ template <class T>
 concept equality_comparable = requires(T const& t) {
     { t == t } -> same_as<bool>;
 };
-// clang-format on
 } // namespace tuplet
 
 // tuplet::type_list implementation
 // tuplet::type_map implementation
 // tuplet::tuple_elem implementation
 // tuplet::deduce_elems
+// tuplet::tuple declaration (for use in cat2_impl)
 namespace tuplet {
+template <class... T>
+struct tuple;
+
 template <class... T>
 struct type_list {};
 
@@ -106,14 +96,13 @@ struct tuple_elem {
     auto operator<=>(tuple_elem const&) const = default;
     bool operator==(tuple_elem const&) const = default;
     // Implements comparison for tuples containing reference types
-    constexpr auto operator<=>(tuple_elem const& other) const
-        noexcept(noexcept(value <=> other.value))
-        requires(std::is_reference_v<T> && ordered<T>) {
+    constexpr auto operator<=>(tuple_elem const& other) const noexcept(noexcept(
+        value <=> other.value)) requires(std::is_reference_v<T>&& ordered<T>) {
         return value <=> other.value;
     }
     constexpr bool operator==(tuple_elem const& other) const
-        noexcept(noexcept(value == other.value))
-        requires(std::is_reference_v<T> && equality_comparable<T>) {
+        noexcept(noexcept(value == other.value)) requires(
+            std::is_reference_v<T>&& equality_comparable<T>) {
         return value == other.value;
     }
 };
