@@ -1,6 +1,7 @@
 #ifndef TUPLET_TUPLET_HPP_IMPLEMENTATION
 #define TUPLET_TUPLET_HPP_IMPLEMENTATION
 
+#include <compare>
 #include <cstddef>
 #include <type_traits>
 #include <utility>
@@ -60,6 +61,15 @@ template <class U, class T>
 concept assignable_to = requires(U u, T t) {
     t = u;
 };
+
+template <class T>
+concept ordered = requires(T const& t) {
+    {t <=> t};
+};
+template <class T>
+concept equality_comparable = requires(T const& t) {
+    { t == t } -> same_as<bool>;
+};
 // clang-format on
 } // namespace tuplet
 
@@ -76,6 +86,8 @@ struct type_map : Bases... {
     using base_list = type_list<Bases...>;
     using Bases::operator[]...;
     using Bases::decl_elem...;
+    auto operator<=>(type_map const&) const = default;
+    bool operator==(type_map const&) const = default;
 };
 
 template <size_t I, class T>
@@ -90,6 +102,19 @@ struct tuple_elem {
     constexpr decltype(auto) operator[](tag<I>) const& { return (value); }
     constexpr decltype(auto) operator[](tag<I>) && {
         return (std::move(*this).value);
+    }
+    auto operator<=>(tuple_elem const&) const = default;
+    bool operator==(tuple_elem const&) const = default;
+    // Implements comparison for tuples containing reference types
+    constexpr auto operator<=>(tuple_elem const& other) const
+        noexcept(noexcept(value <=> other.value))
+        requires(std::is_reference_v<T> && ordered<T>) {
+        return value <=> other.value;
+    }
+    constexpr bool operator==(tuple_elem const& other) const
+        noexcept(noexcept(value == other.value))
+        requires(std::is_reference_v<T> && equality_comparable<T>) {
+        return value == other.value;
     }
 };
 template <class T>
@@ -168,6 +193,9 @@ struct tuple : tuple_base_t<T...> {
         return *this;
     }
 
+    auto operator<=>(tuple const&) const = default;
+    bool operator==(tuple const&) const = default;
+
    private:
     template <class U, class... B1, class... B2>
     constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
@@ -194,6 +222,8 @@ struct tuple<> : tuple_base_t<> {
     constexpr auto& operator=(U&& tup) noexcept { return *this; }
 
     constexpr auto& assign() noexcept { return *this; }
+    auto operator<=>(tuple const&) const = default;
+    bool operator==(tuple const&) const = default;
 };
 template <class... Ts>
 tuple(Ts...) -> tuple<unwrap_ref_decay_t<Ts>...>;
@@ -232,6 +262,8 @@ struct pair {
         second = std::forward<S2>(s);
         return *this;
     }
+    auto operator<=>(pair const&) const = default;
+    bool operator==(pair const&) const = default;
 };
 template <class A, class B>
 pair(A, B) -> pair<unwrap_ref_decay_t<A>, unwrap_ref_decay_t<B>>;
