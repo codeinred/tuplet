@@ -63,3 +63,17 @@ TEST_CASE("check tuple assignment", "[assign]") {
     REQUIRE(t2[1_tag] == 2);
     REQUIRE(t2[2_tag] == "Hello, world!");
 }
+
+TEST_CASE("Assignment to empty tuple", "[assign]") {
+    tuplet::tuple<> empty_tuple;
+
+    // A tuple should be assignable from a stateless type
+    empty_tuple = [] {};
+
+    // A empty tuple should be reference assignable from a stateless type
+    auto empty_lambda = [] {};
+    empty_tuple = empty_lambda;
+
+    // Checks that self-assignment compiles
+    empty_tuple = empty_tuple;
+}
