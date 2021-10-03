@@ -80,7 +80,6 @@ if(PROJECT_IS_TOP_LEVEL)
 
     # Add all files in directory test as tests, and link against tuplet and
     # threads
-    add_test_dir(test tuplet Threads::Threads)
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(
@@ -98,12 +97,20 @@ if(PROJECT_IS_TOP_LEVEL)
         benchmark
         https://github.com/google/benchmark.git
         main)
+    find_or_fetch(
+        Catch2
+        https://github.com/catchorg/catch2.git
+        devel)
     FetchContent_MakeAvailable(${remote_dependencies})
 
     add_source_dir(
         bench
         tuplet
         benchmark)
+    add_test_dir(
+        test2
+        tuplet
+        Catch2::Catch2WithMain)
 endif()
 
 
