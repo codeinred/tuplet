@@ -1,22 +1,25 @@
+#include "util/printing.hpp"
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
 #include <tuplet/format.hpp>
 #include <tuplet/tuple.hpp>
-#include "util/printing.hpp"
 
-TEST_CASE("Test comparisons", "[compare]") {
+TEST_CASE("Lexiconographic ordering", "[compare]") {
     using tuplet::tuple;
 
-    SECTION("lexiconographic ordering", "[compare]") {
-        tuple t1 {0, 0};
-        tuple t2 {0, 1};
-        tuple t3 {1, 0};
+    tuple t1 {0, 0};
+    tuple t2 {0, 1};
+    tuple t3 {1, 0};
 
-        REQUIRE(t1 == t1);
-        REQUIRE(t1 < t2);
-        REQUIRE(t2 < t3);
-    }
+    REQUIRE(t1 == t1);
+    REQUIRE(t1 < t2);
+    REQUIRE(t2 < t3);
+}
+
+TEST_CASE("Empty tuple equals itself", "[compare]") {
+    REQUIRE(tuplet::tuple{} == tuplet::tuple{});
+    REQUIRE_FALSE(tuplet::tuple{} != tuplet::tuple{});
 }
 
 SCENARIO("We have tuples created with references", "[compare]") {
