@@ -3,13 +3,7 @@
 #include <memory>
 #include <tuplet/format.hpp>
 #include <tuplet/tuple.hpp>
-
-namespace Catch {
-template <class... T>
-std::ostream& operator<<(std::ostream& cout, tuplet::tuple<T...> const& tup) {
-    return cout << fmt::format("{:[]}", tup);
-}
-} // namespace Catch
+#include "util/printing.hpp"
 
 TEST_CASE("tuplet::apply") {
     using namespace tuplet::literals;
