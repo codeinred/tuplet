@@ -19,7 +19,7 @@ TEST_CASE("tuplet::apply") {
     int b = 0;
     std::string c;
 
-    SECTION("apply-1: Check tuplet::apply with tuplet::tie") {
+    SECTION("Check tuplet::apply with tuplet::tie", "[apply]") {
         REQUIRE((a == 0 && b == 0 && c == ""));
 
         auto func = [](auto& x, auto& y, auto& z) {
@@ -43,7 +43,7 @@ TEST_CASE("Test Assignment") {
     int b = 0;
     std::string c;
 
-    SECTION("assign-1: Check assignment with tuplet::tie") {
+    SECTION("Check assignment with tuplet::tie", "[assign]") {
         REQUIRE((a == 0 && b == 0 && c == ""));
 
         tuplet::tie(a, b, c).assign(1, 2, "Hello, world!");
@@ -53,7 +53,7 @@ TEST_CASE("Test Assignment") {
         REQUIRE(c == "Hello, world!");
     }
 
-    SECTION("assign-2: Check = operator for tuples") {
+    SECTION("Check = operator for tuples", "[assign]") {
         REQUIRE((a == 0 && b == 0 && c == ""));
 
         tuplet::tie(a, b, c) = tuplet::tuple {
@@ -66,7 +66,7 @@ TEST_CASE("Test Assignment") {
         REQUIRE(c == "Hello, world!");
     }
 
-    SECTION("assign-3: Operator = with heterogenous element types") {
+    SECTION("Operator = with heterogenous element types", "[assign]") {
         REQUIRE((a == 0 && b == 0 && c == ""));
 
         tuplet::tie(a, b, c) = tuplet::tuple {1, 2, "Hello, world!"};
@@ -76,7 +76,7 @@ TEST_CASE("Test Assignment") {
         REQUIRE(c == "Hello, world!");
     }
 
-    SECTION("assign-4: check assignment results in moves") {
+    SECTION("check assignment results in moves", "[assign]") {
         tuplet::tuple<std::unique_ptr<int>, std::string> t, q;
 
         t = {std::make_unique<int>(69420), "Hello, world!"};
@@ -88,7 +88,7 @@ TEST_CASE("Test Assignment") {
         REQUIRE(q[1_tag] == "Hello, world!");
     }
 
-    SECTION("assign-5: check tuple assignment") {
+    SECTION("check tuple assignment", "[assign]") {
         using namespace tuplet::literals;
         tuplet::tuple<int, int, std::string> t1 {1, 2, "Hello, world!"}, t2;
 
@@ -100,7 +100,7 @@ TEST_CASE("Test Assignment") {
     }
 }
 TEST_CASE("Test structured bindings") {
-    SECTION("binding-1: Check tuple decomposition") {
+    SECTION("Check tuple decomposition", "[binding]") {
         auto tup = tuplet::tuple {1, 2, std::string("Hello, world!")};
 
         auto [a, b, c] = tup;
@@ -110,7 +110,7 @@ TEST_CASE("Test structured bindings") {
         REQUIRE(c == "Hello, world!");
     }
 
-    SECTION("binding-2: Check tuple decomposition by reference") {
+    SECTION("Check tuple decomposition by reference", "[binding]") {
         auto tup = tuplet::tuple {0, 0, std::string()};
 
         auto& [a, b, c] = tup;
@@ -124,7 +124,7 @@ TEST_CASE("Test structured bindings") {
         REQUIRE(get<2>(tup) == "Hello, world!");
     }
 
-    SECTION("binding-3: Check tuple decomposition by move") {
+    SECTION("Check tuple decomposition by move", "[binding]") {
         auto tup = tuplet::tuple {
             1,
             std::make_unique<int>(2),
@@ -140,10 +140,10 @@ TEST_CASE("Test structured bindings") {
     }
 }
 
-TEST_CASE("Test comparisons") {
+TEST_CASE("Test comparisons", "[compare]") {
     using tuplet::tuple;
 
-    SECTION("compare-1: lexiconographic ordering") {
+    SECTION("lexiconographic ordering", "[compare]") {
         tuple t1 {0, 0};
         tuple t2 {0, 1};
         tuple t3 {1, 0};
@@ -154,7 +154,7 @@ TEST_CASE("Test comparisons") {
     }
 }
 
-SCENARIO("We have tuples created with references", "[compare-2]") {
+SCENARIO("We have tuples created with references", "[compare]") {
     using tuplet::tuple;
 
     int a = 0, b = 1, c = 2;
