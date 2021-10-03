@@ -153,3 +153,27 @@ TEST_CASE("Test comparisons") {
         REQUIRE(t2 < t3);
     }
 }
+
+SCENARIO("We have tuples created with references", "[compare-2]") {
+    using tuplet::tuple;
+
+    int a = 0, b = 1, c = 2;
+    tuple t1 = {std::ref(a), std::ref(b)};
+    tuple t2 = {std::ref(a), std::ref(c)};
+    REQUIRE(std::is_same_v<decltype(t1), tuple<int&, int&>>);
+
+    REQUIRE(t1 < t2);
+    REQUIRE(t1 != t2);
+    REQUIRE(!(t1 == t2));
+    REQUIRE(!(t1 > t2));
+
+    WHEN("The values in b and c are swapped") {
+        std::swap(b, c);
+        THEN("The relative ordering of the tuples changes") {
+            REQUIRE(t2 < t1);
+            REQUIRE(t1 != t2);
+            REQUIRE(!(t1 == t2));
+            REQUIRE(!(t2 > t1));
+        }
+    }
+}
