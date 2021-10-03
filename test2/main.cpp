@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
 #include <tuplet/format.hpp>
@@ -139,4 +140,16 @@ TEST_CASE("Test structured bindings") {
     }
 }
 
+TEST_CASE("Test comparisons") {
+    using tuplet::tuple;
 
+    SECTION("compare-1: lexiconographic ordering") {
+        tuple t1 {0, 0};
+        tuple t2 {0, 1};
+        tuple t3 {1, 0};
+
+        REQUIRE(t1 == t1);
+        REQUIRE(t1 < t2);
+        REQUIRE(t2 < t3);
+    }
+}
