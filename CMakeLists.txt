@@ -101,7 +101,7 @@ if(PROJECT_IS_TOP_LEVEL)
         fmt
         https://github.com/fmtlib/fmt.git
         master)
-    find_or_fetch(
+    always_fetch(
         Catch2
         https://github.com/catchorg/catch2.git
         devel)
@@ -111,11 +111,19 @@ if(PROJECT_IS_TOP_LEVEL)
         bench
         tuplet
         benchmark)
-    add_test_dir(
-        test2
-        tuplet
+    add_executable(
+        test_tuplet
+        test2/test_tuplet.cpp)
+    target_link_libraries(
+        test_tuplet
+        tuplet::tuplet
         fmt::fmt
         Catch2::Catch2WithMain)
+
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    include(CTest)
+    include(Catch)
+    catch_discover_tests(test_tuplet)
 endif()
 
 

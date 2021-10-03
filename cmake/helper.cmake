@@ -79,6 +79,18 @@ function(find_or_fetch package repo tag)
     endif()
 endfunction()
 
+function(always_fetch package repo tag)
+    note("Fetching dependency '${package}' from ${repo}")
+    include(FetchContent)
+    FetchContent_Declare(
+        "${package}"
+        GIT_REPOSITORY "${repo}"
+        GIT_TAG "${tag}"
+    )
+    list(APPEND remote_dependencies "${package}")
+    set (remote_dependencies  ${remote_dependencies} PARENT_SCOPE)
+endfunction()
+
 #####################################################################
 ## Sec. 3: Convinience Functions to add targets more automatically ##
 #####################################################################
