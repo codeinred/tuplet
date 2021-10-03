@@ -98,6 +98,10 @@ if(PROJECT_IS_TOP_LEVEL)
         https://github.com/google/benchmark.git
         main)
     find_or_fetch(
+        fmt
+        https://github.com/fmtlib/fmt.git
+        master)
+    find_or_fetch(
         Catch2
         https://github.com/catchorg/catch2.git
         devel)
@@ -110,6 +114,7 @@ if(PROJECT_IS_TOP_LEVEL)
     add_test_dir(
         test2
         tuplet
+        fmt::fmt
         Catch2::Catch2WithMain)
 endif()
 
