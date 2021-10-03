@@ -32,16 +32,16 @@ SCENARIO("We have tuples created with references", "[compare]") {
 
     REQUIRE(t1 < t2);
     REQUIRE(t1 != t2);
-    REQUIRE(!(t1 == t2));
-    REQUIRE(!(t1 > t2));
+    REQUIRE_FALSE(t1 == t2);
+    REQUIRE_FALSE(t1 > t2);
 
     WHEN("The values in b and c are swapped") {
         std::swap(b, c);
         THEN("The relative ordering of the tuples changes") {
             REQUIRE(t2 < t1);
             REQUIRE(t1 != t2);
-            REQUIRE(!(t1 == t2));
-            REQUIRE(!(t2 > t1));
+            REQUIRE_FALSE(t1 == t2);
+            REQUIRE_FALSE(t2 > t1);
         }
     }
 }
