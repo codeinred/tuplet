@@ -11,16 +11,19 @@ struct fmt::formatter<tuplet::tuple<T...>> {
     char close_char = '}';
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
         std::string_view view(ctx.begin(), ctx.end());
-        if (view.size() == 2) {
+        if (view.size() == 0) {
+            return ctx.begin();
+        }
+        if (view.size() == 3) {
             open_char = view[0];
             close_char = view[1];
         }
-        if(view.size() == 3) {
+        if(view.size() == 4) {
             open_char = view[0];
             separator = view[1];
             close_char = view[2];
         }
-        return ctx.begin() + view.size();
+        return ctx.begin() + view.size() - 1;
     }
     template <typename FormatContext>
     constexpr auto format(const tuplet::tuple<T...>& p, FormatContext& ctx)
