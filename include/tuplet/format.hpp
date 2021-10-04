@@ -10,7 +10,7 @@ struct fmt::formatter<tuplet::tuple<T...>> {
     char separator = ',';
     char close_char = '}';
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
-        std::string_view view(ctx.begin(), ctx.end());
+        std::string_view view(ctx.begin(), ctx.end() - ctx.begin());
         if (view.size() == 0) {
             return ctx.begin();
         }
