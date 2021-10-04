@@ -320,13 +320,9 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
 } // namespace tuplet
 
 namespace tuplet {
-constexpr tuple<> tuple_cat() { return {}; }
-template <base_list_tuple T>
-constexpr auto tuple_cat(T&& t) {
-    return std::forward<T>(t);
-}
+namespace {
 template <base_list_tuple T1, base_list_tuple T2>
-constexpr auto tuple_cat(T1&& t1, T2&& t2) {
+constexpr auto cat2(T1&& t1, T2&& t2) {
     return detail::cat2_impl(
         std::forward<T1>(t1),
         std::forward<T2>(t2),
@@ -335,11 +331,26 @@ constexpr auto tuple_cat(T1&& t1, T2&& t2) {
         base_list_t<T1>(),
         base_list_t<T2>());
 }
-template <base_list_tuple T1, base_list_tuple... T2>
-constexpr auto tuple_cat(T1&& t1, T2&&... t2) {
-    return tuplet::tuple_cat(
-        std::forward<T1>(t1),
-        tuplet::tuple_cat(std::forward<T2>(t2)...));
+
+template <class T>
+concept is_tuple_times = requires(T t) {
+    { t.tup } -> base_list_tuple;
+};
+template <base_list_tuple Tup>
+struct tuple_times {
+    Tup tup;
+};
+template <is_tuple_times X1, is_tuple_times X2>
+constexpr auto operator*(X1&& x1, X2&& x2) {
+    return tuple_times {
+        cat2(std::forward<X1>(x1).tup, std::forward<X2>(x2).tup)};
+}
+} // namespace
+
+constexpr tuple<> tuple_cat() { return {}; }
+template <base_list_tuple... T>
+constexpr auto tuple_cat(T&&... t) {
+    return (tuple_times {std::forward<T>(t)} * ...).tup;
 }
 } // namespace tuplet
 
