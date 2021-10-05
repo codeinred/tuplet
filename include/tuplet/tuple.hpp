@@ -93,6 +93,10 @@ struct tuple_elem {
     constexpr decltype(auto) operator[](tag<I>) && {
         return (std::move(*this).value);
     }
+    // TODO:  should there be
+    constexpr decltype(auto) operator[](tag<I>) const && {
+        return (std::move(*this).value);
+    }
     auto operator<=>(tuple_elem const&) const = default;
     bool operator==(tuple_elem const&) const = default;
     // Implements comparison for tuples containing reference types
