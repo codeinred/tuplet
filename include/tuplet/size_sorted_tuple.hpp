@@ -58,11 +58,11 @@ constexpr auto cmp_by(auto f, auto less = std::less<> {}) {
  * >
  * evaluates to std::array{3,2,0,1}
  */
-template <auto attribute, class less, class... Ts>
+template <class attribute, class less, class... Ts>
 inline constexpr auto attribute_sorted_indices = [] {
     using namespace permute;
     constexpr auto N {sizeof...(Ts)};
-    constexpr std::array attrs {attribute.template operator()<Ts>()...};
+    constexpr std::array attrs {attribute{}.template operator()<Ts>()...};
 
     std::array<std::size_t,N> indices;
     std::iota(std::begin(indices), std::end(indices), 0u);
@@ -90,14 +90,14 @@ inline constexpr auto attribute_sorted_indices = [] {
  * evaluates to permutation{2,3,1,0}
  *
  */
-template <auto attribute, class less, class... Ts>
+template <class attribute, class less, class... Ts>
 inline constexpr auto attribute_sorting_permutation =
     permute::inverse(attribute_sorted_indices<attribute, less, Ts...>);
 
 template <class... Ts>
 inline constexpr auto
     size_descending_permutation = attribute_sorting_permutation<
-        []<class T>() { return sizeof(T); },
+        decltype([]<class T>() { return sizeof(T); }),
         std::greater<>,
         Ts...>;
 

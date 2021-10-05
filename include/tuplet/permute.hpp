@@ -166,10 +166,12 @@ class storage_permuted_tuple : detail::tuple_friends {
       : underlying_ {permute_tuple<σ>(args)} {}
 
     template <class... Args>
+    requires(sizeof...(Args)==sizeof...(Ts))
     constexpr TUPLET_IMPLICIT((std::is_convertible_v<Args&&, Ts> and ...))
         storage_permuted_tuple(Args&&... args) noexcept(
-            noexcept(storage_permuted_tuple {tuple {TUPLET_FWD(args)...}}))
-      : storage_permuted_tuple {tuple {TUPLET_FWD(args)...}} {}
+            noexcept(storage_permuted_tuple {
+                tuple {static_cast<Ts>(TUPLET_FWD(args))...}}))
+      : storage_permuted_tuple {tuple {static_cast<Ts>(TUPLET_FWD(args))...}} {}
 
 #define TUPLET_DEF_OPERATOR_SUBSCRIPT(constref, move)                          \
     template <std::size_t i>                                                   \

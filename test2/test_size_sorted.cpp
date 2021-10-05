@@ -8,7 +8,7 @@ TEST_CASE("attribute_sorted_indices sorts the indices in place of types "
     {
         auto constexpr sorted_indices = tuplet::size_sorted::
             attribute_sorted_indices<
-                []<class T>() { return T::value; },
+                decltype([]<class T>() { return T::value; }),
                 std::less<>,
                 tuplet::tag<5>,  // 0
                 tuplet::tag<2>,  // 1
@@ -27,7 +27,7 @@ TEST_CASE("attribute_sorted_indices sorts the indices in place of types "
     {
         auto constexpr sorted_indices = tuplet::size_sorted::
             attribute_sorted_indices<
-                []<class T>() { return T::value; },
+                decltype([]<class T>() { return T::value; }),
                 std::less<>,
                 tuplet::tag<3>,  // 0
                 tuplet::tag<4>,  // 1
@@ -46,7 +46,7 @@ TEST_CASE("attribute_sorting_permutation gives the permutation that would move "
           "the types into sorted position.") {
     constexpr auto
         sorting_perm = tuplet::size_sorted::attribute_sorting_permutation<
-            []<class T>() { return T::value; },
+            decltype([]<class T>() { return T::value; }),
             std::less<>,
             tuplet::tag<3>,
             tuplet::tag<4>,
