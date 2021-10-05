@@ -130,6 +130,9 @@ Standard:        Latest
 StatementMacros:
   - Q_UNUSED
   - QT_REQUIRE_VERSION
+  - ARROW
+  - RET
+  - NOEX
 TabWidth:        4
 UseCRLF:         false
 UseTab:          Never
