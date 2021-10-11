@@ -67,14 +67,10 @@ namespace tuplet {
 template <class... T>
 struct type_list {};
 
-// Operators should be declared in a sub-namespace incase someone does
-// "using namespace tuplet"
-namespace ops {
 template <class... Ls, class... Rs>
 constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
     return type_list<Ls..., Rs...> {};
 }
-} // namespace ops
 
 template <class... Bases>
 struct type_map : Bases... {
@@ -321,7 +317,6 @@ constexpr auto base_map_one(type_list<Bases...>) {
 
 template <class... Tups, class... Xs>
 constexpr auto base_mapping(type_list<Xs...>) {
-    using ops::operator+;
     return (... + base_map_one<Xs>(base_list_t<Tups> {}));
 }
 
