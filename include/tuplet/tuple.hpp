@@ -67,10 +67,14 @@ namespace tuplet {
 template <class... T>
 struct type_list {};
 
+// Operators should be declared in a sub-namespace incase someone does
+// "using namespace tuplet"
+namespace ops {
 template <class... Ls, class... Rs>
 constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
     return type_list<Ls..., Rs...> {};
 }
+} // namespace ops
 
 template <class... Bases>
 struct type_map : Bases... {
@@ -308,32 +312,45 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
 } // namespace tuplet
 
 // tuplet::tuple_cat implementation
-namespace tuplet {
-template <class X, class... Ys>
-constexpr auto tuple_cat_impl2(type_list<Ys...>) {
-    return type_list<type_list<X, Ys>...>{};
+// These functions should go in the detail namespace
+namespace tuplet::detail {
+template <class Tuple, class... Bases>
+constexpr auto base_map_one(type_list<Bases...>) {
+    return type_list<type_list<Tuple, Bases>...> {};
 }
 
 template <class... Tups, class... Xs>
-constexpr auto tuple_cat_impl(type_list<Xs...>) {
-    return (... + tuple_cat_impl2<Xs>(typename std::decay_t<Tups>::base_list()));
+constexpr auto base_mapping(type_list<Xs...>) {
+    using ops::operator+;
+    return (... + base_map_one<Xs>(base_list_t<Tups> {}));
 }
 
-template <class T, class... Xs, class... Ys>
-constexpr auto tuple_cat_impl3(T&& tup, type_list<type_list<Xs, Ys>...>) {
-    return tuple{ std::move((tup.identity_t<Xs>::value).identity_t<Ys>::value)... };
+template <class... Tups, class T, class... Xs, class... Ys>
+constexpr auto tuple_cat_impl(T&& tup, type_list<type_list<Xs, Ys>...>) {
+    // preserve reference types, so that catting tuples containing references
+    // preserves the references
+    return tuple<typename Ys::type...> {
+        // Forward each value according to the corresponding tuple given as
+        // input to tuple_cat
+        (std::forward<typename Xs::type>(tup.identity_t<Xs>::value)
+            .identity_t<Ys>::value)...};
 }
 
+} // namespace tuplet::detail
+namespace tuplet {
 template <base_list_tuple... Tups>
 constexpr auto tuple_cat(Tups&&... ts) {
     if constexpr (sizeof...(Tups) == 0) {
         return tuple<>();
     } else if constexpr (sizeof...(Tups) == 1) {
-        return (ts, ...);
+        return (std::forward<Tups>(ts), ...);
     } else {
-        auto big_tup = tuple<Tups&&...>{ static_cast<Tups&&>(ts)... };
-        constexpr auto list = tuple_cat_impl<Tups...>(typename decltype(big_tup)::base_list());
-        return tuple_cat_impl3(std::move(big_tup), list);
+        using big_tup_t = tuple<Tups&&...>;
+        constexpr auto list = detail::base_mapping<Tups...>(
+            base_list_t<big_tup_t> {});
+        return detail::tuple_cat_impl<Tups...>(
+            big_tup_t {std::forward<Tups>(ts)...},
+            list);
     }
 }
 } // namespace tuplet
