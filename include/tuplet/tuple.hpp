@@ -125,7 +125,7 @@ struct get_tuple_base<std::index_sequence<I...>, T...> {
 
 template <class F, class Tup, class... Bases>
 constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
-    return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
+    return static_cast<F&&>(f)(static_cast<Tup&&>(t).identity_t<Bases>::value...);
 }
 template <char... D>
 constexpr size_t size_t_from_digits() {
@@ -155,18 +155,18 @@ struct tuple : tuple_base_t<T...> {
         using tuple2 = std::decay_t<U>;
         if (base_list_tuple<tuple2>) {
             eq_impl(
-                std::forward<U>(tup),
+                static_cast<U&&>(tup),
                 base_list(),
                 typename tuple2::base_list());
         } else {
-            eq_impl(std::forward<U>(tup), tag_range<N>());
+            eq_impl(static_cast<U&&>(tup), tag_range<N>());
         }
         return *this;
     }
 
     template <assignable_to<T>... U>
     constexpr auto& assign(U&&... values) {
-        assign_impl(base_list(), std::forward<U>(values)...);
+        assign_impl(base_list(), static_cast<U&&>(values)...);
         return *this;
     }
 
@@ -176,15 +176,15 @@ struct tuple : tuple_base_t<T...> {
    private:
     template <class U, class... B1, class... B2>
     constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
-        (void(B1::value = std::forward<U>(u).identity_t<B2>::value), ...);
+        (void(B1::value = static_cast<U&&>(u).identity_t<B2>::value), ...);
     }
     template <class U, size_t... I>
     constexpr void eq_impl(U&& u, std::index_sequence<I...>) {
-        (void(tuple_elem<I, T>::value = get<I>(std::forward<U>(u))), ...);
+        (void(tuple_elem<I, T>::value = get<I>(static_cast<U&&>(u))), ...);
     }
     template <class... U, class... B>
     constexpr void assign_impl(type_list<B...>, U&&... u) {
-        (void(B::value = std::forward<U>(u)), ...);
+        (void(B::value = static_cast<U&&>(u)), ...);
     }
 };
 template <>
@@ -227,16 +227,16 @@ struct pair {
 
     template <other_than<pair> Type> // Preserves default assignments
     constexpr auto& operator=(Type&& tup) {
-        auto&& [a, b] = std::forward<Type>(tup);
-        first = std::forward<decltype(a)>(a);
-        second = std::forward<decltype(b)>(b);
+        auto&& [a, b] = static_cast<Type&&>(tup);
+        first = static_cast<decltype(a)&&>(a);
+        second = static_cast<decltype(b)&&>(b);
         return *this;
     }
 
     template <assignable_to<First> F2, assignable_to<Second> S2>
     constexpr auto& assign(F2&& f, S2&& s) {
-        first = std::forward<F2>(f);
-        second = std::forward<S2>(s);
+        first = static_cast<F2&&>(f);
+        second = static_cast<S2&&>(s);
         return *this;
     }
     auto operator<=>(pair const&) const = default;
@@ -261,7 +261,7 @@ struct convert {
    private:
     template <class U, class... Bases>
     constexpr U convert_impl(type_list<Bases...>) {
-        return U {std::forward<Tuple>(tuple).identity_t<Bases>::value...};
+        return U {static_cast<Tuple&&>(tuple).identity_t<Bases>::value...};
     }
 };
 template <class Tuple>
@@ -278,7 +278,7 @@ convert(Tuple&&) -> convert<Tuple>;
 namespace tuplet {
 template <size_t I, indexable Tup>
 constexpr decltype(auto) get(Tup&& tup) {
-    return std::forward<Tup>(tup)[tag<I>()];
+    return static_cast<Tup&&>(tup)[tag<I>()];
 }
 
 template <class... T>
@@ -289,21 +289,21 @@ constexpr tuple<T&...> tie(T&... t) {
 template <class F, base_list_tuple Tup>
 constexpr decltype(auto) apply(F&& func, Tup&& tup) {
     return detail::apply_impl(
-        std::forward<F>(func),
-        std::forward<Tup>(tup),
+        static_cast<F&&>(func),
+        static_cast<Tup&&>(tup),
         typename std::decay_t<Tup>::base_list());
 }
 template <class F, class A, class B>
 constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>& pair) {
-    return std::forward<F>(func)(pair.first, pair.second);
+    return static_cast<F&&>(func)(pair.first, pair.second);
 }
 template <class F, class A, class B>
 constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B> const& pair) {
-    return std::forward<F>(func)(pair.first, pair.second);
+    return static_cast<F&&>(func)(pair.first, pair.second);
 }
 template <class F, class A, class B>
 constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
-    return std::forward<F>(func)(std::move(pair).first, std::move(pair).second);
+    return static_cast<F&&>(func)(std::move(pair).first, std::move(pair).second);
 }
 } // namespace tuplet
 
@@ -327,7 +327,7 @@ constexpr auto tuple_cat_impl(T&& tup, type_list<type_list<Xs, Ys>...>) {
     return tuple<typename Ys::type...> {
         // Forward each value according to the corresponding tuple given as
         // input to tuple_cat
-        (std::forward<typename Xs::type>(tup.identity_t<Xs>::value)
+        (static_cast<typename Xs::type&&>(tup.identity_t<Xs>::value)
             .identity_t<Ys>::value)...};
 }
 
@@ -338,13 +338,13 @@ constexpr auto tuple_cat(Tups&&... ts) {
     if constexpr (sizeof...(Tups) == 0) {
         return tuple<>();
     } else if constexpr (sizeof...(Tups) == 1) {
-        return (std::forward<Tups>(ts), ...);
+        return (static_cast<Tups&&>(ts), ...);
     } else {
         using big_tup_t = tuple<Tups&&...>;
         constexpr auto list = detail::base_mapping<Tups...>(
             base_list_t<big_tup_t> {});
         return detail::tuple_cat_impl<Tups...>(
-            big_tup_t {std::forward<Tups>(ts)...},
+            big_tup_t {static_cast<Tups&&>(ts)...},
             list);
     }
 }
@@ -355,12 +355,12 @@ constexpr auto tuple_cat(Tups&&... ts) {
 namespace tuplet {
 template <typename... Ts>
 constexpr auto make_tuple(Ts&&... args) {
-    return tuplet::tuple<unwrap_ref_decay_t<Ts>...> {std::forward<Ts>(args)...};
+    return tuplet::tuple<unwrap_ref_decay_t<Ts>...> {static_cast<Ts&&>(args)...};
 }
 
 template <typename... T>
 constexpr auto forward_as_tuple(T&&... a) noexcept {
-    return tuple<T&&...> {std::forward<T>(a)...};
+    return tuple<T&&...> {static_cast<T&&>(a)...};
 }
 } // namespace tuplet
 
