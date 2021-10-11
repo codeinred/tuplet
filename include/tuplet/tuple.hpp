@@ -63,13 +63,14 @@ concept equality_comparable = requires(T const& t) {
 // tuplet::type_map implementation
 // tuplet::tuple_elem implementation
 // tuplet::deduce_elems
-// tuplet::tuple declaration (for use in cat2_impl)
 namespace tuplet {
 template <class... T>
-struct tuple;
-
-template <class... T>
 struct type_list {};
+
+template <class... Ls, class... Rs>
+constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
+    return type_list<Ls..., Rs...> {};
+}
 
 template <class... Bases>
 struct type_map : Bases... {
@@ -112,7 +113,6 @@ using unwrap_ref_decay_t = typename std::unwrap_ref_decay<T>::type;
 
 // tuplet::detail::get_tuple_base implementation
 // tuplet::detail::apply_impl
-// tuplet::detail::cat2_impl
 // tuplet::detail::size_t_from_digits
 namespace tuplet::detail {
 template <class A, class... T>
@@ -126,18 +126,6 @@ struct get_tuple_base<std::index_sequence<I...>, T...> {
 template <class F, class Tup, class... Bases>
 constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
     return std::forward<F>(f)(std::forward<Tup>(t).identity_t<Bases>::value...);
-}
-template <class T, class U, class... E1, class... E2, class... B1, class... B2>
-constexpr auto cat2_impl(
-    T&& t1,
-    U&& t2,
-    type_list<E1...>,
-    type_list<E2...>,
-    type_list<B1...>,
-    type_list<B2...>) -> tuple<E1..., E2...> {
-    return {
-        std::forward<T>(t1).identity_t<B1>::value...,
-        std::forward<U>(t2).identity_t<B2>::value...};
 }
 template <char... D>
 constexpr size_t size_t_from_digits() {
@@ -319,27 +307,34 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
 }
 } // namespace tuplet
 
+// tuplet::tuple_cat implementation
 namespace tuplet {
-constexpr tuple<> tuple_cat() { return {}; }
-template <base_list_tuple T>
-constexpr auto tuple_cat(T&& t) {
-    return std::forward<T>(t);
+template <class X, class... Ys>
+constexpr auto tuple_cat_impl2(type_list<Ys...>) {
+    return type_list<type_list<X, Ys>...>{};
 }
-template <base_list_tuple T1, base_list_tuple T2>
-constexpr auto tuple_cat(T1&& t1, T2&& t2) {
-    return detail::cat2_impl(
-        std::forward<T1>(t1),
-        std::forward<T2>(t2),
-        element_list_t<T1>(),
-        element_list_t<T2>(),
-        base_list_t<T1>(),
-        base_list_t<T2>());
+
+template <class... Tups, class... Xs>
+constexpr auto tuple_cat_impl(type_list<Xs...>) {
+    return (... + tuple_cat_impl2<Xs>(typename std::decay_t<Tups>::base_list()));
 }
-template <base_list_tuple T1, base_list_tuple... T2>
-constexpr auto tuple_cat(T1&& t1, T2&&... t2) {
-    return tuplet::tuple_cat(
-        std::forward<T1>(t1),
-        tuplet::tuple_cat(std::forward<T2>(t2)...));
+
+template <class T, class... Xs, class... Ys>
+constexpr auto tuple_cat_impl3(T&& tup, type_list<type_list<Xs, Ys>...>) {
+    return tuple{ std::move((tup.identity_t<Xs>::value).identity_t<Ys>::value)... };
+}
+
+template <base_list_tuple... Tups>
+constexpr auto tuple_cat(Tups&&... ts) {
+    if constexpr (sizeof...(Tups) == 0) {
+        return tuple<>();
+    } else if constexpr (sizeof...(Tups) == 1) {
+        return (ts, ...);
+    } else {
+        auto big_tup = tuple<Tups&&...>{ static_cast<Tups&&>(ts)... };
+        constexpr auto list = tuple_cat_impl<Tups...>(typename decltype(big_tup)::base_list());
+        return tuple_cat_impl3(std::move(big_tup), list);
+    }
 }
 } // namespace tuplet
 
