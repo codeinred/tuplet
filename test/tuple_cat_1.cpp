@@ -45,9 +45,7 @@ int main() {
         tup = tuplet::tuple_cat(
             tuple {std::make_unique<int>(69420)},
             tuple {std::string {"Hello, world!"}},
-            tuple {'a'},
-            tuple {'b'},
-            tuple {'c'});
+            tuple {'a', 'b', 'c'});
 
     if (*tup[0_tag] == 69420 && tup[1_tag] == "Hello, world!"
         && tup[2_tag] == 'a' && tup[3_tag] == 'b' && tup[4_tag] == 'c') {
