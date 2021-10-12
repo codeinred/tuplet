@@ -348,9 +348,23 @@ constexpr auto tuple_cat(T&&... ts) {
     if constexpr (sizeof...(T) == 0) {
         return tuple<>();
     } else {
-        // It turns out that passing these by value generates better assembly
-        // on Clang and identical assembly on GCC. Everything should get
-        // constructed in place, with the move being optimized out.
+
+/**
+ * It appears that Clang produces better assembly when
+ * TUPLET_CAT_BY_FORWARDING_TUPLE == 0, while GCC produces better assembly when
+ * TUPLET_CAT_BY_FORWARDING_TUPLE == 1. MSVC always produces terrible assembly
+ * in either case. This will set TUPLET_CAT_BY_FORWARDING_TUPLE to the correct
+ * value (0 for clang, 1 for everyone else)
+ *
+ * See: https://github.com/codeinred/tuplet/discussions/14
+ */
+#if !defined(TUPLET_CAT_BY_FORWARDING_TUPLE)
+#if defined(__clang__)
+#define TUPLET_CAT_BY_FORWARDING_TUPLE 0
+#else
+#define TUPLET_CAT_BY_FORWARDING_TUPLE 1
+#endif
+#endif
 #if TUPLET_CAT_BY_FORWARDING_TUPLE
         using big_tuple = tuple<T&&...>;
 #else
