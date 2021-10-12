@@ -11,6 +11,10 @@ namespace tuplet {
 template <class T>
 using identity_t = T;
 
+// Obtains T::type
+template <class T>
+using type_t = typename T::type;
+
 template <size_t I>
 using tag = std::integral_constant<size_t, I>;
 
@@ -64,6 +68,9 @@ concept equality_comparable = requires(T const& t) {
 // tuplet::tuple_elem implementation
 // tuplet::deduce_elems
 namespace tuplet {
+template <class... T>
+struct tuple;
+
 template <class... T>
 struct type_list {};
 
@@ -123,15 +130,39 @@ struct get_tuple_base<std::index_sequence<I...>, T...> {
     using type = type_map<tuple_elem<I, T>...>;
 };
 
-template <class F, class Tup, class... Bases>
-constexpr decltype(auto) apply_impl(F&& f, Tup&& t, type_list<Bases...>) {
-    return static_cast<F&&>(f)(static_cast<Tup&&>(t).identity_t<Bases>::value...);
+template <class F, class T, class... Bases>
+constexpr decltype(auto) apply_impl(F&& f, T&& t, type_list<Bases...>) {
+    return static_cast<F&&>(f)(static_cast<T&&>(t).identity_t<Bases>::value...);
 }
 template <char... D>
 constexpr size_t size_t_from_digits() {
     static_assert((('0' <= D && D <= '9') && ...), "Must be integral literal");
     size_t num = 0;
     return ((num = num * 10 + (D - '0')), ..., num);
+}
+template <class First, class>
+using first_t = First;
+
+template <class T, class... Q>
+constexpr auto repeat_type(type_list<Q...>) {
+    return type_list<first_t<T, Q>...> {};
+}
+template <class... Outer>
+constexpr auto get_outer_bases(type_list<Outer...>) {
+    return (repeat_type<Outer>(base_list_t<type_t<Outer>> {}) + ...);
+}
+template <class... Outer>
+constexpr auto get_inner_bases(type_list<Outer...>) {
+    return (base_list_t<type_t<Outer>> {} + ...);
+}
+
+// This takes a forwarding tuple as a parameter. The forwarding tuple only
+// contains references, so it should just be taken by value.
+template <class T, class... Outer, class... Inner>
+constexpr auto cat_impl(T tup, type_list<Outer...>, type_list<Inner...>)
+    -> tuple<type_t<Inner>...> {
+    return {static_cast<type_t<Outer>&&>(tup.identity_t<Outer>::value)
+                .identity_t<Inner>::value...};
 }
 } // namespace tuplet::detail
 
@@ -303,59 +334,33 @@ constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B> const& pair) {
 }
 template <class F, class A, class B>
 constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
-    return static_cast<F&&>(func)(std::move(pair).first, std::move(pair).second);
+    return static_cast<F&&>(
+        func)(std::move(pair).first, std::move(pair).second);
 }
 } // namespace tuplet
 
 // tuplet::tuple_cat implementation
-// These functions should go in the detail namespace
-namespace tuplet::detail {
-template <class Tuple, class... Bases>
-constexpr auto base_map_one(type_list<Bases...>) {
-    return type_list<type_list<Tuple, Bases>...> {};
-}
-
-template <class... Tups, class... Xs>
-constexpr auto base_mapping(type_list<Xs...>) {
-    return (... + base_map_one<Xs>(base_list_t<Tups> {}));
-}
-
-template <class... Tups, class T, class... Xs, class... Ys>
-constexpr auto tuple_cat_impl(T&& tup, type_list<type_list<Xs, Ys>...>) {
-    // preserve reference types, so that catting tuples containing references
-    // preserves the references
-    return tuple<typename Ys::type...> {
-        // Forward each value according to the corresponding tuple given as
-        // input to tuple_cat
-        (static_cast<typename Xs::type&&>(tup.identity_t<Xs>::value)
-            .identity_t<Ys>::value)...};
-}
-
-} // namespace tuplet::detail
-namespace tuplet {
-template <base_list_tuple... Tups>
-constexpr auto tuple_cat(Tups&&... ts) {
-    if constexpr (sizeof...(Tups) == 0) {
-        return tuple<>();
-    } else if constexpr (sizeof...(Tups) == 1) {
-        return (static_cast<Tups&&>(ts), ...);
-    } else {
-        using big_tup_t = tuple<Tups&&...>;
-        constexpr auto list = detail::base_mapping<Tups...>(
-            base_list_t<big_tup_t> {});
-        return detail::tuple_cat_impl<Tups...>(
-            big_tup_t {static_cast<Tups&&>(ts)...},
-            list);
-    }
-}
-} // namespace tuplet
-
 // tuplet::make_tuple implementation
 // tuplet::forward_as_tuple implementation
 namespace tuplet {
+template <base_list_tuple... T>
+constexpr auto tuple_cat(T&&... ts) {
+    if constexpr (sizeof...(T) == 0) {
+        return tuple<>();
+    } else {
+        using outer_bases = base_list_t<tuple<T&&...>>;
+        constexpr auto outer = detail::get_outer_bases(outer_bases {});
+        constexpr auto inner = detail::get_inner_bases(outer_bases {});
+        return detail::cat_impl(
+            tuple<T&&...> {static_cast<T&&>(ts)...},
+            outer,
+            inner);
+    }
+}
+
 template <typename... Ts>
 constexpr auto make_tuple(Ts&&... args) {
-    return tuplet::tuple<unwrap_ref_decay_t<Ts>...> {static_cast<Ts&&>(args)...};
+    return tuple<unwrap_ref_decay_t<Ts>...> {static_cast<Ts&&>(args)...};
 }
 
 template <typename... T>
