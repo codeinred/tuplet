@@ -348,11 +348,15 @@ constexpr auto tuple_cat(T&&... ts) {
     if constexpr (sizeof...(T) == 0) {
         return tuple<>();
     } else {
-        using outer_bases = base_list_t<tuple<T&&...>>;
+        // It turns out that passing these by value generates better assembly
+        // on Clang and identical assembly on GCC. Everything should get
+        // constructed in place, with the move being optimized out.
+        using big_tuple = tuple<std::decay_t<T>...>;
+        using outer_bases = base_list_t<big_tuple>;
         constexpr auto outer = detail::get_outer_bases(outer_bases {});
         constexpr auto inner = detail::get_inner_bases(outer_bases {});
         return detail::cat_impl(
-            tuple<T&&...> {static_cast<T&&>(ts)...},
+            big_tuple {static_cast<T&&>(ts)...},
             outer,
             inner);
     }
