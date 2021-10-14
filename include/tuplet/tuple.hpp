@@ -348,11 +348,33 @@ constexpr auto tuple_cat(T&&... ts) {
     if constexpr (sizeof...(T) == 0) {
         return tuple<>();
     } else {
-        using outer_bases = base_list_t<tuple<T&&...>>;
+
+/**
+ * It appears that Clang produces better assembly when
+ * TUPLET_CAT_BY_FORWARDING_TUPLE == 0, while GCC produces better assembly when
+ * TUPLET_CAT_BY_FORWARDING_TUPLE == 1. MSVC always produces terrible assembly
+ * in either case. This will set TUPLET_CAT_BY_FORWARDING_TUPLE to the correct
+ * value (0 for clang, 1 for everyone else)
+ *
+ * See: https://github.com/codeinred/tuplet/discussions/14
+ */
+#if !defined(TUPLET_CAT_BY_FORWARDING_TUPLE)
+#if defined(__clang__)
+#define TUPLET_CAT_BY_FORWARDING_TUPLE 0
+#else
+#define TUPLET_CAT_BY_FORWARDING_TUPLE 1
+#endif
+#endif
+#if TUPLET_CAT_BY_FORWARDING_TUPLE
+        using big_tuple = tuple<T&&...>;
+#else
+        using big_tuple = tuple<std::decay_t<T>...>;
+#endif
+        using outer_bases = base_list_t<big_tuple>;
         constexpr auto outer = detail::get_outer_bases(outer_bases {});
         constexpr auto inner = detail::get_inner_bases(outer_bases {});
         return detail::cat_impl(
-            tuple<T&&...> {static_cast<T&&>(ts)...},
+            big_tuple {static_cast<T&&>(ts)...},
             outer,
             inner);
     }
