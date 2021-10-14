@@ -61,7 +61,7 @@ include(FetchContent)
 # build it locally.
 function(find_or_fetch package repo tag)
     if (NOT ALWAYS_FETCH)
-        find_package(${package} QUIET)
+        find_package(${package} ${ARGN} QUIET)
     endif()
 
     if (ALWAYS_FETCH OR NOT ${${package}_FOUND})
