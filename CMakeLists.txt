@@ -101,10 +101,11 @@ if(PROJECT_IS_TOP_LEVEL)
         fmt
         https://github.com/fmtlib/fmt.git
         master)
-    always_fetch(
+    find_or_fetch(
         Catch2
         https://github.com/catchorg/catch2.git
-        devel)
+        devel
+        3.0.0)
     FetchContent_MakeAvailable(${remote_dependencies})
 
     add_source_dir(
@@ -113,13 +114,14 @@ if(PROJECT_IS_TOP_LEVEL)
         benchmark)
     add_executable(
         test_tuplet
-        test2/test_tuplet.cpp)
+        test/test_tuplet.cpp)
     target_link_libraries(
         test_tuplet
         tuplet::tuplet
         fmt::fmt
         Catch2::Catch2WithMain)
 
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/lib/cmake/Catch2)
     list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
     include(CTest)
     include(Catch)
