@@ -14,15 +14,17 @@ struct fmt::formatter<tuplet::tuple<T...>> {
         std::string_view view(ctx.begin(), ctx.end() - ctx.begin());
         if (view.size() == 0) {
             return ctx.begin();
-        }
-        if (view.size() == 3) {
+        } else if (view.size() == 3) {
             open_char = view[0];
             close_char = view[1];
-        }
-        if (view.size() == 4) {
+        } else if (view.size() == 4) {
             open_char = view[0];
             separator = view[1];
             close_char = view[2];
+        } else {
+            throw fmt::format_error(fmt::format(
+                "Format specification {} is currently unsupported",
+                view));
         }
         if ("<{[("sv.find(open_char) == std::string_view::npos) {
             throw fmt::format_error(
