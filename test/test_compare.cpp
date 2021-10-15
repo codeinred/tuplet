@@ -50,6 +50,7 @@ SCENARIO("We have tuples created with references", "[compare]") {
     }
 }
 
+#if !defined(__clang__) || __clang_major__ >= 12
 SCENARIO("We have tuplet with different but comparable types", "[compare]") {
     using tuplet::tuple;
 
@@ -77,3 +78,7 @@ SCENARIO(
     STATIC_REQUIRE_FALSE(std::is_same_v<decltype(t1), decltype(t2)>);
     REQUIRE(t1 == t2);
 }
+#else
+#warning                                                                       \
+    "Heterogenous comparisons between tuples of different types isn't supported in clang 10 or clang 11. Please upgrade to clang 12 for full support for these language features."
+#endif
