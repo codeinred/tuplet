@@ -38,7 +38,7 @@ jobs:
             compiler: clang++-11
             flags: ""
             build_type: Debug
-            install_compiler: sudo apt install g++-10 && sudo apt install clang-10
+            install_compiler: sudo apt install g++-10 && sudo apt install clang-11
 
           - name: ubuntu-latest-clang-12
             os: ubuntu-latest
