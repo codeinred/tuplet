@@ -3,3 +3,4 @@
 #include "test_compare.cpp"
 #include "test_structured_bindings.cpp"
 #include "test_traits.cpp"
+#include "test_printing.cpp"
