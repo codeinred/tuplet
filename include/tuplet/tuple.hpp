@@ -57,9 +57,22 @@ template <class T>
 concept ordered = requires(T const& t) {
     {t <=> t};
 };
+template <class T, class U>
+concept ordered_with = requires(T const& t, U const& u) {
+    {t <=> u};
+};
 template <class T>
 concept equality_comparable = requires(T const& t) {
     { t == t } -> same_as<bool>;
+};
+template <class T, class U>
+concept equality_comparable_with = requires(T const& t, U const& u) {
+    { t == u } -> same_as<bool>;
+};
+
+template <class T, class U>
+concept compare_joinable = requires(T t, U u) {
+    {t == 0 ? u : t};
 };
 } // namespace tuplet
 
@@ -77,6 +90,11 @@ struct type_list {};
 template <class... Ls, class... Rs>
 constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
     return type_list<Ls..., Rs...> {};
+}
+template <class T, class U>
+constexpr auto operator^(T a, U b) noexcept
+    requires(compare_joinable<T, U>&& noexcept(a == 0 ? b : a)) {
+    return a == 0 ? b : a;
 }
 
 template <class... Bases>
@@ -174,6 +192,39 @@ using tuple_base_t = typename detail::
 
 template <class... T>
 struct tuple : tuple_base_t<T...> {
+   private:
+    template <class... U, class... B1, class... B2>
+    constexpr auto cmp_impl(
+        tuple<U...> const& other,
+        type_list<B1...>,
+        type_list<B2...>) const
+        noexcept(
+            noexcept(((B1::value <=> other.identity_t<B2>::value) ^ ...))) {
+        return ((B1::value <=> other.identity_t<B2>::value) ^ ...);
+    }
+    template <class... U, class... B1, class... B2>
+    constexpr auto eq_impl(
+        tuple<U...> const& other,
+        type_list<B1...>,
+        type_list<B2...>) const
+        noexcept(
+            noexcept(((B1::value == other.identity_t<B2>::value) && ...))) {
+        return ((B1::value == other.identity_t<B2>::value) && ...);
+    }
+    template <class U, class... B1, class... B2>
+    constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
+        (void(B1::value = static_cast<U&&>(u).identity_t<B2>::value), ...);
+    }
+    template <class U, size_t... I>
+    constexpr void eq_impl(U&& u, std::index_sequence<I...>) {
+        (void(tuple_elem<I, T>::value = get<I>(static_cast<U&&>(u))), ...);
+    }
+    template <class... U, class... B>
+    constexpr void assign_impl(type_list<B...>, U&&... u) {
+        (void(B::value = static_cast<U&&>(u)), ...);
+    }
+
+   public:
     constexpr static size_t N = sizeof...(T);
     using super = tuple_base_t<T...>;
     using super::operator[];
@@ -203,19 +254,15 @@ struct tuple : tuple_base_t<T...> {
 
     auto operator<=>(tuple const&) const = default;
     bool operator==(tuple const&) const = default;
-
-   private:
-    template <class U, class... B1, class... B2>
-    constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
-        (void(B1::value = static_cast<U&&>(u).identity_t<B2>::value), ...);
+    template <ordered_with<T>... U>
+    constexpr auto operator<=>(tuple<U...> const& other) const noexcept(
+        noexcept(cmp_impl(other, base_list {}, base_list_t<tuple<U...>> {}))) {
+        return cmp_impl(other, base_list {}, base_list_t<tuple<U...>> {});
     }
-    template <class U, size_t... I>
-    constexpr void eq_impl(U&& u, std::index_sequence<I...>) {
-        (void(tuple_elem<I, T>::value = get<I>(static_cast<U&&>(u))), ...);
-    }
-    template <class... U, class... B>
-    constexpr void assign_impl(type_list<B...>, U&&... u) {
-        (void(B::value = static_cast<U&&>(u)), ...);
+    template <equality_comparable_with<T>... U>
+    constexpr auto operator==(tuple<U...> const& other) const noexcept(
+        noexcept(eq_impl(other, base_list {}, base_list_t<tuple<U...>> {}))) {
+        return eq_impl(other, base_list {}, base_list_t<tuple<U...>> {});
     }
 };
 template <>
