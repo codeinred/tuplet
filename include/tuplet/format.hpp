@@ -10,7 +10,7 @@ struct fmt::formatter<tuplet::tuple<T...>> {
     char separator = ',';
     char close_char = '}';
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
-        using std::string_view_literals::operator""sv;
+        constexpr auto npos = std::string_view::npos;
         std::string_view view(ctx.begin(), ctx.end() - ctx.begin());
         if (view.size() == 0) {
             return ctx.begin();
@@ -26,11 +26,11 @@ struct fmt::formatter<tuplet::tuple<T...>> {
                 "Format specification {} is currently unsupported",
                 view));
         }
-        if ("<{[("sv.find(open_char) == std::string_view::npos) {
+        if (std::string_view("<{[(").find(open_char) == npos) {
             throw fmt::format_error(
                 fmt::format("Enable to interpret open char {}", open_char));
         }
-        if (">}])"sv.find(close_char) == std::string_view::npos) {
+        if (std::string_view(">}])").find(close_char) == npos) {
             throw fmt::format_error(
                 fmt::format("Unable to interpret close char {}", close_char));
         }
