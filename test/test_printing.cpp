@@ -6,7 +6,7 @@
 #include <memory>
 
 TEST_CASE("Test printing with fmt", "[printing]") {
-    REQUIRE(fmt::format("{}", tuplet::tuple{1, 2, 3}) == "{1, 2, 3}");
+    REQUIRE(fmt::format("{}", tuplet::tuple{1, 2, 3}) == "(1, 2, 3)");
     REQUIRE(fmt::format("{:[]}", tuplet::tuple{1, 2, 3}) == "[1, 2, 3]");
     REQUIRE(fmt::format("{:<>}", tuplet::tuple{1, 2, 3}) == "<1, 2, 3>");
     REQUIRE(fmt::format("{:()}", tuplet::tuple{1, 2, 3}) == "(1, 2, 3)");

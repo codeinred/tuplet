@@ -6,9 +6,9 @@
 
 template <class... T>
 struct fmt::formatter<tuplet::tuple<T...>> {
-    char open_char = '{';
+    char open_char = '(';
     char separator = ',';
-    char close_char = '}';
+    char close_char = ')';
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
         constexpr auto npos = std::string_view::npos;
         std::string_view view(ctx.begin(), ctx.end() - ctx.begin());
