@@ -227,7 +227,7 @@ struct tuple<> : tuple_base_t<> {
 
     template <other_than<tuple> U> // Preserves default assignments
     requires stateless<U>          // Check that U is similarly stateless
-    constexpr auto& operator=(U&& tup) noexcept { return *this; }
+    constexpr auto& operator=(U&&) noexcept { return *this; }
 
     constexpr auto& assign() noexcept { return *this; }
     auto operator<=>(tuple const&) const = default;
