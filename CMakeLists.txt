@@ -70,9 +70,14 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/tuplet
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-
 include(helper)
-if(PROJECT_IS_TOP_LEVEL)
+
+option(
+    BUILD_TESTING
+    "Build testing for tuplet"
+    ON)
+
+if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
     include(CTest)
 
     set(THREADS_PREFER_PTHREAD_FLAG ON)
