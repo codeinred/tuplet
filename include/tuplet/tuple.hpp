@@ -6,6 +6,19 @@
 #include <type_traits>
 #include <utility>
 
+#if (__has_cpp_attribute(no_unique_address))
+#define TUPLET_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#elif (__has_cpp_attribute(msvc::no_unique_address))                           \
+    || ((defined _MSC_VER) && (!defined __clang__))
+// Note __has_cpp_attribute(msvc::no_unique_address) itself doesn't work as
+// of 19.30.30709, even though the attribute itself is supported. See
+// https://github.com/llvm/llvm-project/issues/49358#issuecomment-981041089
+#define TUPLET_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#else
+// no_unique_address is not available.
+#define TUPLET_NO_UNIQUE_ADDRESS
+#endif
+
 // tuplet concepts and traits
 namespace tuplet {
 template <class T>
@@ -94,7 +107,7 @@ struct tuple_elem {
     static T decl_elem(tag<I>);
     using type = T;
 
-    [[no_unique_address]] T value;
+    TUPLET_NO_UNIQUE_ADDRESS T value;
 
     constexpr decltype(auto) operator[](tag<I>) & { return (value); }
     constexpr decltype(auto) operator[](tag<I>) const& { return (value); }
@@ -242,8 +255,8 @@ namespace tuplet {
 template <class First, class Second>
 struct pair {
     constexpr static size_t N = 2;
-    [[no_unique_address]] First first;
-    [[no_unique_address]] Second second;
+    TUPLET_NO_UNIQUE_ADDRESS First first;
+    TUPLET_NO_UNIQUE_ADDRESS Second second;
 
     constexpr decltype(auto) operator[](tag<0>) & { return (first); }
     constexpr decltype(auto) operator[](tag<0>) const& { return (first); }
