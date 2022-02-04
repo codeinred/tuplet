@@ -1,3 +1,4 @@
+#include "test_alignment.cpp"
 #include "test_apply.cpp"
 #include "test_assignment.cpp"
 #include "test_compare.cpp"
