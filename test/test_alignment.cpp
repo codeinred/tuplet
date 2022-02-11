@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <fmt/format.h>
 #include <tuplet/tuple.hpp>
+#include "util/reflection.hpp"
 
 // To get clang-cl: cmake -T ClangCL ...
 
@@ -76,7 +77,7 @@ void test_tuple_alignment() {
     const auto base_addr {reinterpret_cast<uintptr_t>(&t)};
     size_t offset {0}, index {0};
 
-    INFO(fmt::format("{}", typeid(Tuple).name()));
+    INFO(fmt::format("{}", refl::name_of_type<Tuple>));
 
     tuple_for_each(t, [&](auto& element) {
         using element_type = std::decay_t<decltype(element)>;
