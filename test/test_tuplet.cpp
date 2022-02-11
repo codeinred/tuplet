@@ -5,3 +5,7 @@
 #include "test_structured_bindings.cpp"
 #include "test_traits.cpp"
 #include "test_printing.cpp"
+#include "test_map.cpp"
+#include "test_for_each.cpp"
+#include "test_all.cpp"
+#include "test_any.cpp"

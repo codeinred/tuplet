@@ -217,6 +217,78 @@ struct tuple : tuple_base_t<T...> {
     auto operator<=>(tuple const&) const = default;
     bool operator==(tuple const&) const = default;
 
+    // Applies a function to every element of the tuple. The order is the
+    // declaration order, so first the function will be applied to element 0,
+    // then element 1, then element 2, and so on, where element N is identified
+    // by get<N>
+    template <class F>
+    constexpr void for_each(F&& func) & {
+        for_each_impl(base_list(), static_cast<F&&>(func));
+    }
+    template <class F>
+    constexpr void for_each(F&& func) const& {
+        for_each_impl(base_list(), static_cast<F&&>(func));
+    }
+    template <class F>
+    constexpr void for_each(F&& func) && {
+        static_cast<tuple&&>(*this).for_each_impl(
+            base_list(),
+            static_cast<F&&>(func));
+    }
+
+    // Applies a function to each element successively, until one returns a
+    // truthy value. Returns true if any application returned a truthy value,
+    // and false otherwise
+    template <class F>
+    constexpr bool any(F&& func) & {
+        return any_impl(base_list(), static_cast<F&&>(func));
+    }
+    template <class F>
+    constexpr bool any(F&& func) const& {
+        return any_impl(base_list(), static_cast<F&&>(func));
+    }
+    template <class F>
+    constexpr bool any(F&& func) && {
+        return static_cast<tuple&&>(*this).any_impl(
+            base_list(),
+            static_cast<F&&>(func));
+    }
+
+    // Applies a function to each element successively, until one returns a
+    // falsy value. Returns true if every application returned a truthy value,
+    // and false otherwise
+    template <class F>
+    constexpr bool all(F&& func) & {
+        return all_impl(base_list(), static_cast<F&&>(func));
+    }
+    template <class F>
+    constexpr bool all(F&& func) const& {
+        return all_impl(base_list(), static_cast<F&&>(func));
+    }
+    template <class F>
+    constexpr bool all(F&& func) && {
+        return static_cast<tuple&&>(*this).all_impl(
+            base_list(),
+            static_cast<F&&>(func));
+    }
+
+    // Map a function over every element in the tuple, using the values to
+    // construct a new tuple
+    template <class F>
+    constexpr auto map(F&& func) & {
+        return map_impl(base_list(), static_cast<F&&>(func));
+    }
+    template <class F>
+    constexpr auto map(F&& func) const& {
+        return map_impl(base_list(), static_cast<F&&>(func));
+    }
+    template <class F>
+    constexpr auto map(F&& func) && {
+        return static_cast<tuple&&>(*this).map_impl(
+            base_list(),
+            static_cast<F&&>(func));
+    }
+
    private:
     template <class U, class... B1, class... B2>
     constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
@@ -229,6 +301,62 @@ struct tuple : tuple_base_t<T...> {
     template <class... U, class... B>
     constexpr void assign_impl(type_list<B...>, U&&... u) {
         (void(B::value = static_cast<U&&>(u)), ...);
+    }
+
+    template <class F, class... B>
+    constexpr void for_each_impl(type_list<B...>, F&& func) & {
+        (void(func(B::value)), ...);
+    }
+    template <class F, class... B>
+    constexpr void for_each_impl(type_list<B...>, F&& func) const& {
+        (void(func(B::value)), ...);
+    }
+    template <class F, class... B>
+    constexpr void for_each_impl(type_list<B...>, F&& func) && {
+        (void(func(static_cast<T&&>(B::value))), ...);
+    }
+
+    template <class F, class... B>
+    constexpr bool any_impl(type_list<B...>, F&& func) & {
+        return (bool(func(B::value)) || ...);
+    }
+    template <class F, class... B>
+    constexpr bool any_impl(type_list<B...>, F&& func) const& {
+        return (bool(func(B::value)) || ...);
+    }
+    template <class F, class... B>
+    constexpr bool any_impl(type_list<B...>, F&& func) && {
+        return (bool(func(static_cast<T&&>(B::value))) || ...);
+    }
+
+    template <class F, class... B>
+    constexpr bool all_impl(type_list<B...>, F&& func) & {
+        return (bool(func(B::value)) && ...);
+    }
+    template <class F, class... B>
+    constexpr bool all_impl(type_list<B...>, F&& func) const& {
+        return (bool(func(B::value)) && ...);
+    }
+    template <class F, class... B>
+    constexpr bool all_impl(type_list<B...>, F&& func) && {
+        return (bool(func(static_cast<T&&>(B::value))) && ...);
+    }
+
+    template <class F, class... B>
+    constexpr auto map_impl(
+        type_list<B...>,
+        F&& func) & -> tuple<unwrap_ref_decay_t<decltype(func(B::value))>...> {
+        return {func(B::value)...};
+    }
+    template <class F, class... B>
+    constexpr auto map_impl(type_list<B...>, F&& func)
+        const& -> tuple<unwrap_ref_decay_t<decltype(func(B::value))>...> {
+        return {func(B::value)...};
+    }
+    template <class F, class... B>
+    constexpr auto map_impl(type_list<B...>, F&& func) && -> tuple<
+        unwrap_ref_decay_t<decltype(func(static_cast<T&&>(B::value)))>...> {
+        return {func(static_cast<T&&>(B::value))...};
     }
 };
 template <>
