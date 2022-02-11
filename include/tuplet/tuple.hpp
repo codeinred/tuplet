@@ -373,6 +373,44 @@ struct tuple<> : tuple_base_t<> {
     constexpr auto& assign() noexcept { return *this; }
     auto operator<=>(tuple const&) const = default;
     bool operator==(tuple const&) const = default;
+
+    // Applies a function to every element of the tuple. The order is the
+    // declaration order, so first the function will be applied to element 0,
+    // then element 1, then element 2, and so on, where element N is identified
+    // by get<N>
+    //
+    // (Does nothing when invoked on empty tuple)
+    template <class F>
+    constexpr void for_each(F&& func) const noexcept {}
+
+    // Applies a function to each element successively, until one returns a
+    // truthy value. Returns true if any application returned a truthy value,
+    // and false otherwise
+    //
+    // (Returns false for empty tuple)
+    template <class F>
+    constexpr bool any(F&& func) const noexcept {
+        return false;
+    }
+
+    // Applies a function to each element successively, until one returns a
+    // falsy value. Returns true if every application returned a truthy value,
+    // and false otherwise
+    //
+    // (Returns true for empty tuple)
+    template <class F>
+    constexpr bool all(F&& func) const noexcept {
+        return true;
+    }
+
+    // Map a function over every element in the tuple, using the values to
+    // construct a new tuple
+    //
+    // (Returns empty tuple when invoked on empty tuple)
+    template <class F>
+    constexpr auto map(F&& func) const noexcept {
+        return tuple {};
+    }
 };
 template <class... Ts>
 tuple(Ts...) -> tuple<unwrap_ref_decay_t<Ts>...>;
