@@ -43,7 +43,3 @@ BENCHMARK_CAPTURE(BM_copy, single_elem_std_tuple_v512, single_elem_std_tuple_v51
 BENCHMARK_CAPTURE(BM_copy, single_elem_tuplet_tuple_v512, single_elem_tuplet_tuple_v512);
 BENCHMARK_CAPTURE(BM_copy, single_elem_std_tuple_v1024, single_elem_std_tuple_v1024);
 BENCHMARK_CAPTURE(BM_copy, single_elem_tuplet_tuple_v1024, single_elem_tuplet_tuple_v1024);
-
-#ifndef INCLUDE_SUB_BENCHMARKS
-BENCHMARK_MAIN();
-#endif

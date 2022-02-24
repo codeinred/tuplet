@@ -388,7 +388,7 @@ struct tuple<> : tuple_base_t<> {
     //
     // (Does nothing when invoked on empty tuple)
     template <class F>
-    constexpr void for_each(F&& func) const noexcept {}
+    constexpr void for_each(F&&) const noexcept {}
 
     // Applies a function to each element successively, until one returns a
     // truthy value. Returns true if any application returned a truthy value,
@@ -396,7 +396,7 @@ struct tuple<> : tuple_base_t<> {
     //
     // (Returns false for empty tuple)
     template <class F>
-    constexpr bool any(F&& func) const noexcept {
+    constexpr bool any(F&&) const noexcept {
         return false;
     }
 
@@ -406,7 +406,7 @@ struct tuple<> : tuple_base_t<> {
     //
     // (Returns true for empty tuple)
     template <class F>
-    constexpr bool all(F&& func) const noexcept {
+    constexpr bool all(F&&) const noexcept {
         return true;
     }
 
@@ -415,7 +415,7 @@ struct tuple<> : tuple_base_t<> {
     //
     // (Returns empty tuple when invoked on empty tuple)
     template <class F>
-    constexpr auto map(F&& func) const noexcept {
+    constexpr auto map(F&&) const noexcept {
         return tuple {};
     }
 };
