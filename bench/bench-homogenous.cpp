@@ -49,7 +49,3 @@ BENCHMARK_CAPTURE(BM_copy, homogenous_std_tuple_v512, homogenous_std_tuple_v512)
 BENCHMARK_CAPTURE(BM_copy, homogenous_tuplet_tuple_v512, homogenous_tuplet_tuple_v512);
 BENCHMARK_CAPTURE(BM_copy, homogenous_std_tuple_v1024, homogenous_std_tuple_v1024);
 BENCHMARK_CAPTURE(BM_copy, homogenous_tuplet_tuple_v1024, homogenous_tuplet_tuple_v1024);
-
-#ifndef INCLUDE_SUB_BENCHMARKS
-BENCHMARK_MAIN();
-#endif

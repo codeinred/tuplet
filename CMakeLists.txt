@@ -113,10 +113,11 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         3.0.0)
     FetchContent_MakeAvailable(${remote_dependencies})
 
-    add_source_dir(
+    add_executable(
         bench
-        tuplet
-        benchmark)
+        bench/bench-heterogenous.cpp
+        bench/bench-homogenous.cpp
+        bench/bench-single-elem.cpp)
     add_executable(
         test_tuplet
         test/test_tuplet.cpp)
@@ -125,6 +126,10 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         tuplet::tuplet
         fmt::fmt
         Catch2::Catch2WithMain)
+    target_link_libraries(
+        bench
+        tuplet::tuplet
+        benchmark::benchmark_main)
 
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/lib/cmake/Catch2)
     list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
