@@ -292,7 +292,10 @@ struct tuple : tuple_base_t<T...> {
    private:
     template <class U, class... B1, class... B2>
     constexpr void eq_impl(U&& u, type_list<B1...>, type_list<B2...>) {
-        (void(B1::value = static_cast<U&&>(u).identity_t<B2>::value), ...);
+        // VS2022 17.1 update has broken this:
+        // https://developercommunity.visualstudio.com/t/fold-expressions-unreliable-in-171-with-c20/1676476
+        //(void(B1::value = static_cast<U&&>(u).identity_t<B2>::value), ...);
+        (void(static_cast<B1&>(*this).value = std::forward<B2>(u).value), ...);
     }
     template <class U, size_t... I>
     constexpr void eq_impl(U&& u, std::index_sequence<I...>) {

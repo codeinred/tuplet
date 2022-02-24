@@ -53,6 +53,20 @@ TEST_CASE("check assignment results in moves", "[assign]") {
     REQUIRE(q[1_tag] == "Hello, world!");
 }
 
+TEST_CASE("check assignment results in moves with tuplet::tie", "[assign]") {
+    std::shared_ptr<int> p;
+    std::string s;
+    tuplet::tuple<std::shared_ptr<int>, std::string> t, q;
+
+    t = {std::make_shared<int>(69420), "Hello, world!"};
+
+    tuplet::tie(p, s) = std::move(t);
+
+    REQUIRE(t[0_tag].get() == nullptr);
+    REQUIRE(*p == 69420);
+    REQUIRE(s == "Hello, world!");
+}
+
 TEST_CASE("check tuple assignment", "[assign]") {
     using namespace tuplet::literals;
     tuplet::tuple<int, int, std::string> t1 {1, 2, "Hello, world!"}, t2;
