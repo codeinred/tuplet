@@ -304,7 +304,7 @@ this problem.
 ## Benchmarks
 
 The compiler is signifigantly better at optimizing memory-intensive operations
-on `tuplet::tuplet` when compared to `std::tuplet`, with a measured speedup of
+on `tuplet::tuple` when compared to `std::tuple`, with a measured speedup of
 2x when copying vectors of 256 elements, and a speedup up 2.25x for vectors of
 512 elements containing homogenous tuples (tuples where all types are identical,
 test size 8 bytes per element).
