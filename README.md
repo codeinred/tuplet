@@ -163,6 +163,7 @@ apply(print, tuplet::tuple{1, 2, "Hello, world!"});
 
 ## Installation
 
+### CMake package
 Tuplet can now be installed as a CMake package!
 
 ```bash
@@ -221,6 +222,11 @@ add_executable(main)
 target_sources(main PRIVATE main.cpp)
 target_link_libraries(main PRIVATE tuplet::tuplet)
 ```
+
+### Conan package
+You can install `tuplet` using the [Conan](https://conan.io/) package manager.  
+Add `tuplet/1.2.2` to your `conanfile.txt`'s `require` clause.  
+This way you can integrate `tuplet` with any [build system](https://docs.conan.io/en/latest/reference/generators.html) Conan supports.
 
 ## Motivation
 
