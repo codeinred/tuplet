@@ -19,29 +19,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: ubuntu-latest-gcc-10
-            os: ubuntu-latest
+          - name: ubuntu-20.04-gcc-10
+            os: ubuntu-20.04
             compiler: g++-10
             flags: ""
             build_type: Debug
             install_compiler: sudo apt install g++-10
 
-          - name: ubuntu-latest-clang-10
-            os: ubuntu-latest
+          - name: ubuntu-20.04-clang-10
+            os: ubuntu-20.04
             compiler: clang++-10
             flags: ""
             build_type: Debug
             install_compiler: sudo apt install g++-10 && sudo apt install clang-10
 
-          - name: ubuntu-latest-clang-12
-            os: ubuntu-latest
+          - name: ubuntu-20.04-clang-12
+            os: ubuntu-20.04
             compiler: clang++-12
             flags: ""
             build_type: Debug
             install_compiler: sudo apt install g++-10 && sudo apt install clang-12
 
-          - name: ubuntu-latest-clang-10-libc++
-            os: ubuntu-latest
+          - name: ubuntu-20.04-clang-10-libc++
+            os: ubuntu-20.04
             compiler: clang++-10
             flags: "-stdlib=libc++"
             build_type: Debug
@@ -53,8 +53,8 @@ jobs:
               libc++abi1-10
               libc++abi-10-dev
 
-          - name: ubuntu-latest-clang-12-libc++
-            os: ubuntu-latest
+          - name: ubuntu-20.04-clang-12-libc++
+            os: ubuntu-20.04
             compiler: clang++-12
             flags: "-stdlib=libc++"
             build_type: Debug
