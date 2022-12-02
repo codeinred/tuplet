@@ -6,21 +6,12 @@
 #include <utility>
 
 
-namespace tuplet::sfinae::detail {
-    template <class Tup, class = typename Tup::base_list>
-    constexpr bool _has_base_list(int) {
-        return true;
-    }
-    template <class Tup>
-    constexpr bool _has_base_list(long long) {
-        return false;
-    }
-} // namespace tuplet::sfinae::detail
-namespace tuplet::sfinae {
-    /// Implement assignment but preserve default assignment
-    template <class A, class B>
-    using other_than = std::enable_if_t<!std::is_same_v<A&, B>>;
-} // namespace tuplet::sfinae
+
+
+
+///////////////////////////////////////////
+////  Tuplet Preprocessor Definitions  ////
+///////////////////////////////////////////
 
 #define _detail_TUPLET_IMPL_COMPARISON_OPERATOR_1(type, member, op)            \
     constexpr auto operator op(type const& other)                              \
@@ -67,10 +58,53 @@ namespace tuplet::sfinae {
 #define TUPLET_NO_UNIQUE_ADDRESS
 #endif
 
+
+
+
+
+/////////////////////////////////////////////
+////  SFINAE, Concepts, and Type Traits  ////
+/////////////////////////////////////////////
+
+namespace tuplet::sfinae::detail {
+    template <class Tup, class = typename Tup::base_list>
+    constexpr bool _has_base_list(int) {
+        return true;
+    }
+    template <class Tup>
+    constexpr bool _has_base_list(long long) {
+        return false;
+    }
+} // namespace tuplet::sfinae::detail
+namespace tuplet::sfinae {
+    /// Implement assignment but preserve default assignment
+    template <class A, class B>
+    using other_than = std::enable_if_t<!std::is_same_v<A&, B>>;
+} // namespace tuplet::sfinae
+
+
 // tuplet concepts and traits
 namespace tuplet {
     template <class T>
+    struct unwrap_reference {
+        using type = T;
+    };
+    template <class U>
+    struct unwrap_reference<std::reference_wrapper<U>> {
+        using type = U&;
+    };
+
+    template <class T>
+    struct unwrap_ref_decay : unwrap_reference<std::decay_t<T>> {};
+
+    template <class T>
+    using unwrap_ref_decay_t = typename unwrap_ref_decay<T>::type;
+
+    template <class T>
     using identity_t = T;
+
+    template <class First, class...>
+    using first_t = First;
 
     // Obtains T::type
     template <class T>
@@ -99,37 +133,32 @@ namespace tuplet {
     concept same_as = std::is_same_v<T, U> && std::is_same_v<U, T>;
 
     template <class T, class U>
-    concept other_than = !std::is_same_v<T&, U>;
+    concept other_than = !
+    std::is_same_v<T&, U>;
 
     template <class Tuple>
     concept base_list_tuple = requires() {
-        typename std::decay_t<Tuple>::base_list;
-    };
+                                  typename std::decay_t<Tuple>::base_list;
+                              };
 
     template <class T>
     concept stateless = std::is_empty_v<std::decay_t<T>>;
 
     template <class T>
-    concept indexable = stateless<T> || requires(T t) {
-        t[tag<0>()];
-    };
+    concept indexable = stateless<T> || requires(T t) { t[tag<0>()]; };
 
     template <class U, class T>
-    concept assignable_to = requires(U u, T t) {
-        t = u;
-    };
+    concept assignable_to = requires(U u, T t) { t = u; };
 
     template <class T>
     concept ordered = requires(T const& t) {
-        {t <=> t};
-    };
+                          { t <=> t };
+                      };
     template <class T>
     concept equality_comparable = requires(T const& t) {
-        { t == t } -> same_as<bool>;
-    };
+                                      { t == t } -> same_as<bool>;
+                                  };
 #endif
-
-
 
     template <class Tuple>
     constexpr auto base_list_tuple_v =
@@ -141,16 +170,23 @@ namespace tuplet {
 } // namespace tuplet
 
 
-// tuplet::type_list implementation
-// tuplet::type_map implementation
-// tuplet::tuple_elem implementation
-// tuplet::deduce_elems
-namespace tuplet {
-    template <class... T>
-    struct tuple;
 
+
+
+///////////////////////////////////////////////////////
+////  tuplet::detail: Comparison Operator Helpers  ////
+///////////////////////////////////////////////////////
+
+namespace tuplet {
+    /// Represents a list of types
     template <class... T>
     struct type_list {};
+
+    /// Convinience + operator for catenating type lists
+    template <class... Ls, class... Rs>
+    constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
+        return type_list<Ls..., Rs...> {};
+    }
 } // namespace tuplet
 
 
@@ -246,16 +282,17 @@ namespace tuplet::detail {
              && ... && true);
         return is_less || is_eq;
     }
-
 } // namespace tuplet::detail
 
 
-namespace tuplet {
-    template <class... Ls, class... Rs>
-    constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
-        return type_list<Ls..., Rs...> {};
-    }
 
+
+
+////////////////////////////
+////  tuplet::type_map  ////
+////////////////////////////
+
+namespace tuplet {
     template <class... Bases>
     struct type_map : Bases... {
         using base_list = type_list<Bases...>;
@@ -266,27 +303,37 @@ namespace tuplet {
         auto operator<=>(type_map const&) const = default;
         bool operator==(type_map const&) const = default;
 #else
-        auto operator==(type_map const& other) const {
+        constexpr auto operator==(type_map const& other) const {
             return detail::_impl_equal(*this, other, base_list {});
         }
-        auto operator!=(type_map const& other) const {
+        constexpr auto operator!=(type_map const& other) const {
             return !(*this == other);
         }
-        auto operator<(type_map const& other) const {
+        constexpr auto operator<(type_map const& other) const {
             return detail::_impl_less(*this, other, base_list {});
         }
-        auto operator<=(type_map const& other) const {
+        constexpr auto operator<=(type_map const& other) const {
             return detail::_impl_less_eq(*this, other, base_list {});
         }
-        auto operator>(type_map const& other) const {
+        constexpr auto operator>(type_map const& other) const {
             return detail::_impl_less(other, *this, base_list {});
         }
-        auto operator>=(type_map const& other) const {
+        constexpr auto operator>=(type_map const& other) const {
             return detail::_impl_less_eq(other, *this, base_list {});
         }
 #endif
     };
+} // namespace tuplet
 
+
+
+
+
+//////////////////////////////
+////  tuplet::tuple_elem  ////
+//////////////////////////////
+
+namespace tuplet {
     template <size_t I, class T>
     struct tuple_elem {
         // Like declval, but with the element
@@ -305,13 +352,15 @@ namespace tuplet {
         bool operator==(tuple_elem const&) const = default;
         // Implements comparison for tuples containing reference types
         constexpr auto operator<=>(tuple_elem const& other) const
-            noexcept(noexcept(value <=> other.value)) requires(
-                std::is_reference_v<T>&& ordered<T>) {
+            noexcept(noexcept(value <=> other.value))
+            requires(std::is_reference_v<T> && ordered<T>)
+        {
             return value <=> other.value;
         }
         constexpr bool operator==(tuple_elem const& other) const
-            noexcept(noexcept(value == other.value)) requires(
-                std::is_reference_v<T>&& equality_comparable<T>) {
+            noexcept(noexcept(value == other.value))
+            requires(std::is_reference_v<T> && equality_comparable<T>)
+        {
             return value == other.value;
         }
 #else
@@ -323,26 +372,16 @@ namespace tuplet {
         _detail_TUPLET_IMPL_COMPARISON_OPERATOR_1(tuple_elem, value, >=)
 #endif
     };
-
-    template <class T>
-    struct unwrap_reference {
-        using type = T;
-    };
-    template <class U>
-    struct unwrap_reference<std::reference_wrapper<U>> {
-        using type = U&;
-    };
-
-    template <class T>
-    struct unwrap_ref_decay : unwrap_reference<std::decay_t<T>> {};
-
-    template <class T>
-    using unwrap_ref_decay_t = typename unwrap_ref_decay<T>::type;
 } // namespace tuplet
 
-// tuplet::detail::get_tuple_base implementation
-// tuplet::detail::apply_impl
-// tuplet::detail::size_t_from_digits
+
+
+
+
+///////////////////////////////////////////////////////////////
+////  tuplet::tuple_base_t - Base class for tuplet::tuple  ////
+///////////////////////////////////////////////////////////////
+
 namespace tuplet::detail {
     template <class A, class... T>
     struct get_tuple_base;
@@ -351,52 +390,25 @@ namespace tuplet::detail {
     struct get_tuple_base<std::index_sequence<I...>, T...> {
         using type = type_map<tuple_elem<I, T>...>;
     };
-
-    template <class F, class T, class... Bases>
-    constexpr decltype(auto) apply_impl(F&& f, T&& t, type_list<Bases...>) {
-        return static_cast<F&&>(f)(
-            static_cast<T&&>(t).identity_t<Bases>::value...);
-    }
-    template <char... D>
-    constexpr size_t size_t_from_digits() {
-        static_assert(
-            (('0' <= D && D <= '9') && ...),
-            "Must be integral literal");
-        size_t num = 0;
-        return ((num = num * 10 + (D - '0')), ..., num);
-    }
-    template <class First, class>
-    using first_t = First;
-
-    template <class T, class... Q>
-    constexpr auto repeat_type(type_list<Q...>) {
-        return type_list<first_t<T, Q>...> {};
-    }
-    template <class... Outer>
-    constexpr auto get_outer_bases(type_list<Outer...>) {
-        return (repeat_type<Outer>(base_list_t<type_t<Outer>> {}) + ...);
-    }
-    template <class... Outer>
-    constexpr auto get_inner_bases(type_list<Outer...>) {
-        return (base_list_t<type_t<Outer>> {} + ...);
-    }
-
-    // This takes a forwarding tuple as a parameter. The forwarding tuple only
-    // contains references, so it should just be taken by value.
-    template <class T, class... Outer, class... Inner>
-    constexpr auto cat_impl(T tup, type_list<Outer...>, type_list<Inner...>)
-        -> tuple<type_t<Inner>...> {
-        return {static_cast<type_t<Outer>&&>(tup.identity_t<Outer>::value)
-                    .identity_t<Inner>::value...};
-    }
 } // namespace tuplet::detail
 
-// tuplet::tuple implementation
 namespace tuplet {
+    /// Obtains a tuplet::type_map whose bases correspond to
+    /// tuplet::tuple_elem<I, T>. Used as the base class for tuplet::tuple.
     template <class... T>
     using tuple_base_t = typename detail::
         get_tuple_base<tag_range<sizeof...(T)>, T...>::type;
+} // namespace tuplet
 
+
+
+
+
+////////////////////////////////////////////////
+////  tuplet::tuple Primary Implementation  ////
+////////////////////////////////////////////////
+
+namespace tuplet {
     template <class... T>
     struct tuple : tuple_base_t<T...> {
         constexpr static size_t N = sizeof...(T);
@@ -664,6 +676,17 @@ namespace tuplet {
             return {func(static_cast<T&&>(B::value))...};
         }
     };
+} // namespace tuplet
+
+
+
+
+
+////////////////////////////////////////////////////
+////  tuplet::tuple Empty Tuple Specialization  ////
+////////////////////////////////////////////////////
+
+namespace tuplet {
     template <>
     struct tuple<> : tuple_base_t<> {
         constexpr static size_t N = 0;
@@ -735,14 +758,21 @@ namespace tuplet {
     tuple(Ts...) -> tuple<unwrap_ref_decay_t<Ts>...>;
 } // namespace tuplet
 
-// tuplet::pair implementation
+
+
+
+
+///////////////////////////////////////
+////  tuplet::pair Implementation  ////
+///////////////////////////////////////
+
 namespace tuplet {
     template <class First, class Second>
     struct pair {
         constexpr static size_t N = 2;
-        constexpr static bool nothrow_swappable =
-            std::is_nothrow_swappable_v<
-                First> && std::is_nothrow_swappable_v<Second>;
+        constexpr static bool
+            nothrow_swappable = std::is_nothrow_swappable_v<First>
+                             && std::is_nothrow_swappable_v<Second>;
         TUPLET_NO_UNIQUE_ADDRESS First first;
         TUPLET_NO_UNIQUE_ADDRESS Second second;
 
@@ -821,7 +851,14 @@ namespace tuplet {
     pair(A, B) -> pair<unwrap_ref_decay_t<A>, unwrap_ref_decay_t<B>>;
 } // namespace tuplet
 
-// tuplet::convert implementation
+
+
+
+
+//////////////////////////////////////////////////////
+////  tuplet::convert: tuple conversion facility  ////
+//////////////////////////////////////////////////////
+
 namespace tuplet {
     // Converts from one tuple type to any other tuple or U
     template <class Tuple>
@@ -847,9 +884,28 @@ namespace tuplet {
     convert(Tuple&&) -> convert<Tuple>;
 } // namespace tuplet
 
+
+
+
+
+/////////////////////////////////////////////////////////
+////  tuplet Appendix 1: Small non-member functions  ////
+/////////////////////////////////////////////////////////
+
+namespace tuplet::detail {
+    template <class F, class T, class... Bases>
+    constexpr decltype(auto) apply_impl(F&& f, T&& t, type_list<Bases...>) {
+        return static_cast<F&&>(f)(
+            static_cast<T&&>(t).identity_t<Bases>::value...);
+    }
+} // namespace tuplet::detail
+
 // tuplet::get implementation
 // tuplet::tie implementation
 // tuplet::apply implementation
+// tuplet::swap
+// tuplet::make_tuple
+// tuplet::forward_as_tuple
 namespace tuplet {
     template <size_t I, TUPLET_WEAK_CONCEPT(indexable) Tup>
     constexpr decltype(auto) get(Tup&& tup) {
@@ -882,13 +938,7 @@ namespace tuplet {
         return static_cast<F&&>(
             func)(static_cast<P>(pair).first, static_cast<P>(pair).second);
     }
-} // namespace tuplet
 
-// tuplet::tuple_cat implementation
-// tuplet::make_tuple implementation
-// tuplet::forward_as_tuple implementation
-// tuplet::swap implementation
-namespace tuplet {
     template <class... T>
     void swap(tuple<T...>& a, tuple<T...>& b) noexcept(
         tuple<T...>::nothrow_swappable) {
@@ -901,7 +951,50 @@ namespace tuplet {
         a.swap(b);
     }
 
+    template <typename... Ts>
+    constexpr auto make_tuple(Ts&&... args) {
+        return tuple<unwrap_ref_decay_t<Ts>...> {static_cast<Ts&&>(args)...};
+    }
 
+    template <typename... T>
+    constexpr auto forward_as_tuple(T&&... a) noexcept {
+        return tuple<T&&...> {static_cast<T&&>(a)...};
+    }
+} // namespace tuplet
+
+
+
+
+
+///////////////////////////////////////////////////////////
+////  tuplet Appendix 2: The Horror that is tuple_cat  ////
+///////////////////////////////////////////////////////////
+
+namespace tuplet::detail {
+    template <class T, class... Q>
+    constexpr auto repeat_type(type_list<Q...>) {
+        return type_list<first_t<T, Q>...> {};
+    }
+    template <class... Outer>
+    constexpr auto get_outer_bases(type_list<Outer...>) {
+        return (repeat_type<Outer>(base_list_t<type_t<Outer>> {}) + ...);
+    }
+    template <class... Outer>
+    constexpr auto get_inner_bases(type_list<Outer...>) {
+        return (base_list_t<type_t<Outer>> {} + ...);
+    }
+
+    // This takes a forwarding tuple as a parameter. The forwarding tuple only
+    // contains references, so it should just be taken by value.
+    template <class T, class... Outer, class... Inner>
+    constexpr auto cat_impl(T tup, type_list<Outer...>, type_list<Inner...>)
+        -> tuple<type_t<Inner>...> {
+        return {static_cast<type_t<Outer>&&>(tup.identity_t<Outer>::value)
+                    .identity_t<Inner>::value...};
+    }
+} // namespace tuplet::detail
+
+namespace tuplet {
     template <TUPLET_WEAK_CONCEPT(base_list_tuple)... T>
     constexpr auto tuple_cat(T&&... ts) {
         if constexpr (sizeof...(T) == 0) {
@@ -939,18 +1032,28 @@ namespace tuplet {
         }
     }
 
-    template <typename... Ts>
-    constexpr auto make_tuple(Ts&&... args) {
-        return tuple<unwrap_ref_decay_t<Ts>...> {static_cast<Ts&&>(args)...};
-    }
 
-    template <typename... T>
-    constexpr auto forward_as_tuple(T&&... a) noexcept {
-        return tuple<T&&...> {static_cast<T&&>(a)...};
-    }
 } // namespace tuplet
 
-// tuplet literals
+
+
+
+
+///////////////////////////////////////////
+////  tuplet Appendix 3: tag literals  ////
+///////////////////////////////////////////
+
+namespace tuplet::literals::detail {
+    template <char... D>
+    constexpr size_t size_t_from_digits() {
+        static_assert(
+            (('0' <= D && D <= '9') && ...),
+            "Must be integral literal");
+        size_t num = 0;
+        return ((num = num * 10 + (D - '0')), ..., num);
+    }
+} // namespace tuplet::literals::detail
+
 namespace tuplet::literals {
     template <char... D>
     constexpr auto operator""_tag() noexcept
@@ -959,8 +1062,14 @@ namespace tuplet::literals {
     }
 } // namespace tuplet::literals
 
-// std::tuple_size specialization
-// std::tuple_element specialization
+
+
+
+
+//////////////////////////////////////////////////////////////////
+////  tuplet Appendix 4: std::tuple_size, std::tuple_element  ////
+//////////////////////////////////////////////////////////////////
+
 namespace std {
     template <class... T>
     struct tuple_size<tuplet::tuple<T...>>
@@ -980,4 +1089,9 @@ namespace std {
         using type = std::conditional_t<I == 0, A, B>;
     };
 } // namespace std
+
+
+
+
+
 #endif
