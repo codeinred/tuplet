@@ -31,6 +31,34 @@ TEST_CASE("Lexiconographic ordering", "[compare]") {
     REQUIRE(t3 >= t1);
 }
 
+
+TEST_CASE("Lexiconographic ordering", "[compare-str]") {
+    using tuplet::tuple;
+    using std::string_view_literals::operator""sv;
+
+    static_assert(tuplet::sfinae::detail::
+                      _has_compare_with<std::string_view, std::string_view>(0));
+
+    auto t1 = tuple {"0"sv, "0"sv};
+    auto t2 = tuple {"0"sv, "00"sv};
+    auto t3 = tuple {"00"sv, "0"sv};
+
+    REQUIRE(t1 == t1);
+    REQUIRE(t1 < t2);
+    REQUIRE(t2 < t3);
+    REQUIRE(t1 < t3);
+    REQUIRE(t2 > t1);
+    REQUIRE(t3 > t2);
+    REQUIRE(t3 > t1);
+
+    REQUIRE(t1 <= t2);
+    REQUIRE(t2 <= t3);
+    REQUIRE(t3 >= t1);
+    REQUIRE(t2 >= t1);
+    REQUIRE(t3 >= t2);
+    REQUIRE(t3 >= t1);
+}
+
 TEST_CASE("Lexiconographic ordering pairs", "[compare]") {
     using tuplet::pair;
 
