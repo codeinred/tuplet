@@ -112,8 +112,14 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         bench/bench-single-elem.cpp)
     file(GLOB test_files CONFIGURE_DEPENDS test/*.cpp)
     add_executable(test_tuplet ${test_files})
+    add_executable(test_tuplet_cpp_20 ${test_files})
     target_link_libraries(
         test_tuplet
+        tuplet::tuplet
+        fmt::fmt
+        Catch2::Catch2WithMain)
+    target_link_libraries(
+        test_tuplet_cpp_20
         tuplet::tuplet
         fmt::fmt
         Catch2::Catch2WithMain)
@@ -121,7 +127,7 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         bench
         tuplet::tuplet
         benchmark::benchmark_main)
-
+    target_compile_features(test_tuplet_cpp_20 PRIVATE cxx_std_20)
     list(
         APPEND
         CMAKE_MODULE_PATH
@@ -133,4 +139,5 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
     include(CTest)
     include(Catch)
     catch_discover_tests(test_tuplet)
+    catch_discover_tests(test_tuplet_cpp_20)
 endif()
