@@ -110,7 +110,8 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         bench/bench-heterogenous.cpp
         bench/bench-homogenous.cpp
         bench/bench-single-elem.cpp)
-    add_executable(test_tuplet test/test_tuplet.cpp)
+    file(GLOB test_files CONFIGURE_DEPENDS test/*.cpp)
+    add_executable(test_tuplet ${test_files})
     target_link_libraries(
         test_tuplet
         tuplet::tuplet
