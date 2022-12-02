@@ -18,8 +18,8 @@ TEST_CASE("Invoke map on tuple", "[test-map]") {
 }
 
 TEST_CASE("Move elements with tuple.map", "[test-map]") {
-    using tuplet::tuple;
     using tuplet::get;
+    using tuplet::tuple;
     using std::string_view_literals::operator""sv;
 
     auto tup = tuple {10, 20.4, "Hello, world"sv, std::make_unique<int>(10)};

@@ -28,7 +28,7 @@ int main() {
 
     auto a = tup[0_tag];
     auto b = std::move(tup)[1_tag]; // Check that when a tuple is moved, the
-                                   // indicies are moved too
+                                    // indicies are moved too
     auto c = tup[2_tag];
     return !is_good(a, *b, c);
 }
