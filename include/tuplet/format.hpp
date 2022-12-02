@@ -45,7 +45,7 @@ struct fmt::formatter<tuplet::tuple<T...>> {
                 ((out = format_to(out, "{} {}", separator, rest)), ...);
                 return format_to(out, "{}", close_char);
             };
-            return apply(print_elems, p);
+            return tuplet::apply(print_elems, p);
         } else {
             return format_to(ctx.out(), "{}{}", open_char, close_char);
         }
