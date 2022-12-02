@@ -76,6 +76,7 @@ IncludeCategories:
   - Regex:           '.*'
     Priority:        1
     SortPriority:    0
+TypenameMacros: ['TUPLET_CONCEPT']
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentCaseLabels: true
@@ -130,6 +131,7 @@ Standard:        Latest
 StatementMacros:
   - Q_UNUSED
   - QT_REQUIRE_VERSION
+  - _detail_TUPLET_IMPL_COMPARISON_OPERATOR_1
 TabWidth:        4
 UseCRLF:         false
 UseTab:          Never

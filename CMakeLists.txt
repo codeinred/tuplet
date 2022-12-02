@@ -22,7 +22,7 @@ list(
     "${CMAKE_CURRENT_LIST_DIR}/cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-target_compile_features(tuplet INTERFACE cxx_std_20)
+target_compile_features(tuplet INTERFACE cxx_std_17)
 
 target_include_directories(
     tuplet INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

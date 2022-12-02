@@ -13,7 +13,7 @@ TEST_CASE("Check tuplet::apply with tuplet::tie", "[apply]") {
         z = "Hello, world!";
     };
 
-    apply(func, tuplet::tie(a, b, c));
+    tuplet::apply(func, tuplet::tie(a, b, c));
 
     REQUIRE(a == 1);
     REQUIRE(b == 2);

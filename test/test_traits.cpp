@@ -5,7 +5,7 @@ static_assert(
     std::is_empty_v<tuplet::tuple<>>,
     "Empty tuple should be an empty type");
 static_assert(
-    tuplet::stateless<tuplet::tuple<>>,
+    tuplet::stateless_v<tuplet::tuple<>>,
     "Empty tuple should be stateless");
 
 static_assert(
@@ -33,7 +33,7 @@ TEST_CASE("Empty tuple should be an empty type", "[traits]") {
     REQUIRE(std::is_empty_v<tuplet::tuple<>>);
 }
 TEST_CASE("Empty tuple should be stateless", "[traits]") {
-    REQUIRE(tuplet::stateless<tuplet::tuple<>>);
+    REQUIRE(tuplet::stateless_v<tuplet::tuple<>>);
 }
 
 TEST_CASE("Calling apply on an empty tuple requires no arguments", "[traits]") {

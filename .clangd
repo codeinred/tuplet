@@ -1,0 +1,2 @@
+CompileFlags:                     # Tweak the parse settings
+  Add: [-std=c++17]

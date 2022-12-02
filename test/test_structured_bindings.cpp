@@ -13,6 +13,7 @@ TEST_CASE("Check tuple decomposition", "[binding]") {
 }
 
 TEST_CASE("Check tuple decomposition by reference", "[binding]") {
+    using tuplet::get;
     auto tup = tuplet::tuple {0, 0, std::string()};
 
     auto& [a, b, c] = tup;

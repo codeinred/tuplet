@@ -5,6 +5,9 @@
 #include <tuplet/format.hpp>
 #include <tuplet/tuple.hpp>
 
+
+using Catch::operator<<;
+
 TEST_CASE("Lexiconographic ordering", "[compare]") {
     using tuplet::tuple;
 
@@ -15,11 +18,81 @@ TEST_CASE("Lexiconographic ordering", "[compare]") {
     REQUIRE(t1 == t1);
     REQUIRE(t1 < t2);
     REQUIRE(t2 < t3);
+    REQUIRE(t1 < t3);
+    REQUIRE(t2 > t1);
+    REQUIRE(t3 > t2);
+    REQUIRE(t3 > t1);
+
+    REQUIRE(t1 <= t2);
+    REQUIRE(t2 <= t3);
+    REQUIRE(t3 >= t1);
+    REQUIRE(t2 >= t1);
+    REQUIRE(t3 >= t2);
+    REQUIRE(t3 >= t1);
+}
+
+TEST_CASE("Lexiconographic ordering pairs", "[compare]") {
+    using tuplet::pair;
+
+    pair t1 {0, 0};
+    pair t2 {0, 1};
+    pair t3 {1, 0};
+
+    REQUIRE(t1 == t1);
+    REQUIRE(t1 < t2);
+    REQUIRE(t2 < t3);
+    REQUIRE(t1 < t3);
+    REQUIRE(t2 > t1);
+    REQUIRE(t3 > t2);
+    REQUIRE(t3 > t1);
+
+    REQUIRE(t1 <= t2);
+    REQUIRE(t2 <= t3);
+    REQUIRE(t3 >= t1);
+    REQUIRE(t2 >= t1);
+    REQUIRE(t3 >= t2);
+    REQUIRE(t3 >= t1);
+}
+
+TEST_CASE("Lexiconographic ordering, different types", "[compare]") {
+    using tuplet::tuple;
+
+    tuple t1 {0, 0};
+    tuple t2 {0ul, 1};
+    tuple t3 {1.0, 0};
+
+    REQUIRE(t1 == t1);
+    REQUIRE(t1 < t2);
+    REQUIRE(t2 < t3);
+    REQUIRE(t1 < t3);
+    REQUIRE(t2 > t1);
+    REQUIRE(t3 > t2);
+    REQUIRE(t3 > t1);
+
+    REQUIRE(t1 <= t2);
+    REQUIRE(t2 <= t3);
+    REQUIRE(t3 >= t1);
+    REQUIRE(t2 >= t1);
+    REQUIRE(t3 >= t2);
+    REQUIRE(t3 >= t1);
+}
+
+TEST_CASE("Tuples with different types", "[compare]") {
+    using tuplet::tuple;
+
+    tuple t1 {1, 2};
+    tuple t2 {'\1', '\2'};
+    tuple t3 {1ul, 2.0};
+
+    REQUIRE(t1 == t1);
+    REQUIRE(t1 == t2);
+    REQUIRE(t1 == t3);
+    REQUIRE(t2 == t3);
 }
 
 TEST_CASE("Empty tuple equals itself", "[compare]") {
-    REQUIRE(tuplet::tuple{} == tuplet::tuple{});
-    REQUIRE_FALSE(tuplet::tuple{} != tuplet::tuple{});
+    REQUIRE(tuplet::tuple {} == tuplet::tuple {});
+    REQUIRE_FALSE(tuplet::tuple {} != tuplet::tuple {});
 }
 
 SCENARIO("We have tuples created with references", "[compare]") {
