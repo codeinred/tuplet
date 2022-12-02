@@ -47,7 +47,7 @@
 #define TUPLET_HAS_NO_UNIQUE_ADDRESS 1
 #define TUPLET_NO_UNIQUE_ADDRESS [[no_unique_address]]
 #elif (__has_cpp_attribute(msvc::no_unique_address))                           \
-    || ((defined _MSC_VER) && (!defined __clang__))
+    || ((defined _MSC_VER) && (!defined __clang__)) && _MSVC_LANG >= 202002L
 // Note __has_cpp_attribute(msvc::no_unique_address) itself doesn't work as
 // of 19.30.30709, even though the attribute itself is supported. See
 // https://github.com/llvm/llvm-project/issues/49358#issuecomment-981041089
