@@ -70,6 +70,11 @@ option(
     ON)
 
 if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
+    # Enable exception handling on MSVC
+    if(MSVC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+    endif()
+
     include(CTest)
 
     set(THREADS_PREFER_PTHREAD_FLAG ON)
