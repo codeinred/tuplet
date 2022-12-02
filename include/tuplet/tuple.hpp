@@ -27,7 +27,8 @@
     class Other, class = ::tuplet::sfinae::other_than<Self, Other>
 #endif
 
-#if __cpp_impl_three_way_comparison && !defined(TUPLET_DEFAULTED_COMPARISON)
+#if __cpp_impl_three_way_comparison && __cpp_lib_three_way_comparison          \
+    && !defined(TUPLET_DEFAULTED_COMPARISON)
 #define TUPLET_DEFAULTED_COMPARISON 1
 #include <compare>
 #else
@@ -221,7 +222,7 @@ namespace tuplet::detail {
             }
             return cmp == 0;
         } else {
-#if __cpp_impl_three_way_comparison
+#if TUPLET_DEFAULTED_COMPARISON
             if constexpr (ordered_with<T, U>) {
                 auto cmp = a <=> b;
 
@@ -745,7 +746,7 @@ namespace tuplet {
 
         void swap(tuple) noexcept {}
         constexpr auto& assign() noexcept { return *this; }
-#if __cpp_impl_three_way_comparison
+#if TUPLET_DEFAULTED_COMPARISON
         auto operator<=>(tuple const&) const = default;
         bool operator==(tuple const&) const = default;
 #else
@@ -851,7 +852,7 @@ namespace tuplet {
             return *this;
         }
 
-#if __cpp_impl_three_way_comparison
+#if TUPLET_DEFAULTED_COMPARISON
         auto operator<=>(pair const&) const = default;
         bool operator==(pair const&) const = default;
 #else
