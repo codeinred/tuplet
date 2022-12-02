@@ -75,6 +75,19 @@ namespace tuplet::sfinae::detail {
     constexpr bool _has_base_list(long long) {
         return false;
     }
+
+    template <
+        class A,
+        class B,
+        class = decltype(std::declval<A>().compare(std::declval<B>()))>
+    constexpr bool _has_compare_with(int) {
+        return true;
+    }
+
+    template <class, class>
+    constexpr bool _has_compare_with(long long) {
+        return false;
+    }
 } // namespace tuplet::sfinae::detail
 namespace tuplet::sfinae {
     /// Implement assignment but preserve default assignment
@@ -154,6 +167,11 @@ namespace tuplet {
     concept ordered = requires(T const& t) {
                           { t <=> t };
                       };
+
+    template <class T, class U>
+    concept ordered_with = requires(T const& t, U const& u) {
+                               { t <=> u };
+                           };
     template <class T>
     concept equality_comparable = requires(T const& t) {
                                       { t == t } -> same_as<bool>;
@@ -195,11 +213,38 @@ namespace tuplet::detail {
     /// sets less to true if a < b
     template <class T, class U>
     constexpr bool _partial_cmp(T const& a, U const& b, bool& less) {
-        if (a < b) {
-            less = true;
-            return false;
+        if constexpr (::tuplet::sfinae::detail::_has_compare_with<T, U>(0)) {
+            int cmp = a.compare(b);
+
+            if (cmp < 0) {
+                less = true;
+            }
+            return cmp == 0;
         } else {
-            return a == b;
+#if __cpp_impl_three_way_comparison
+            if constexpr (ordered_with<T, U>) {
+                auto cmp = a <=> b;
+
+                if (cmp < 0) {
+                    less = true;
+                }
+                return cmp == 0;
+            } else {
+                if (a < b) {
+                    less = true;
+                    return false;
+                } else {
+                    return a == b;
+                }
+            }
+#else
+            if (a < b) {
+                less = true;
+                return false;
+            } else {
+                return a == b;
+            }
+#endif
         }
     }
 
@@ -601,18 +646,13 @@ namespace tuplet {
         }
 
         template <class U, class... B1, class... B2>
-        constexpr void _assign_tup(
-            U&& u,
-            type_list<B1...>,
-            type_list<B2...>) {
+        constexpr void _assign_tup(U&& u, type_list<B1...>, type_list<B2...>) {
             // See:
             // https://developercommunity.visualstudio.com/t/fold-expressions-unreliable-in-171-with-c20/1676476
             (void(B1::value = static_cast<U&&>(u).B2::value), ...);
         }
         template <class U, size_t... I>
-        constexpr void _assign_index_tup(
-            U&& u,
-            std::index_sequence<I...>) {
+        constexpr void _assign_index_tup(U&& u, std::index_sequence<I...>) {
             using std::get;
             (void(tuple_elem<I, T>::value = get<I>(static_cast<U&&>(u))), ...);
         }
