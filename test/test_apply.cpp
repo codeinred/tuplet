@@ -19,3 +19,23 @@ TEST_CASE("Check tuplet::apply with tuplet::tie", "[apply]") {
     REQUIRE(b == 2);
     REQUIRE(c == "Hello, world!");
 }
+
+
+TEST_CASE("Check tuple.apply with tuplet::tie", "[apply-2]") {
+    int a = 0;
+    int b = 0;
+    std::string c;
+    REQUIRE((a == 0 && b == 0 && c == ""));
+
+    auto func = [](auto& x, auto& y, auto& z) {
+        x = 1;
+        y = 2;
+        z = "Hello, world!";
+    };
+
+    tuplet::tie(a, b, c).apply(func);
+
+    REQUIRE(a == 1);
+    REQUIRE(b == 2);
+    REQUIRE(c == "Hello, world!");
+}

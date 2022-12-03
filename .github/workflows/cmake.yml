@@ -105,7 +105,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config ${{ matrix.build_type }}
+      run: cmake --build . --config ${{ matrix.build_type }} --verbose
 
     - name: Test
       working-directory: ${{runner.workspace}}/build

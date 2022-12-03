@@ -1,6 +1,4 @@
-#include <cstdio>
-#include <memory>
-#include <string>
+#include <catch2/catch_test_macros.hpp>
 #include <tuplet/tuple.hpp>
 
 using tuplet::tuple;
@@ -39,18 +37,16 @@ static_assert(
         tuple<char, int, std::string>>,
     "tuplet::tuple_cat broken");
 
-int main() {
-
+TEST_CASE("test tuple_cat", "[tuple_cat]") {
     tuple<std::unique_ptr<int>, std::string, char, char, char>
         tup = tuplet::tuple_cat(
             tuple {std::make_unique<int>(69420)},
             tuple {std::string {"Hello, world!"}},
             tuple {'a', 'b', 'c'});
 
-    if (*tup[0_tag] == 69420 && tup[1_tag] == "Hello, world!"
-        && tup[2_tag] == 'a' && tup[3_tag] == 'b' && tup[4_tag] == 'c') {
-        return 0;
-    } else {
-        return 1;
-    }
+    REQUIRE(*tup[0_tag] == 69420);
+    REQUIRE(tup[1_tag] == "Hello, world!");
+    REQUIRE(tup[2_tag] == 'a');
+    REQUIRE(tup[3_tag] == 'b');
+    REQUIRE(tup[4_tag] == 'c');
 }

@@ -6,7 +6,20 @@
 #include <tuplet/tuple.hpp>
 
 
-using Catch::operator<<;
+
+TEST_CASE("Constexpr compare", "[compare]") {
+
+    constexpr tuplet::tuple t1 {10, 1};
+    constexpr tuplet::tuple t2 {10, 2};
+    constexpr tuplet::tuple t3 {10, 2ul};
+    static_assert(t1 == t1, "Tuple equality broken");
+    static_assert(t1 != t2, "Tuple equality broken");
+    static_assert(t1 < t2, "Tuple compare broken");
+    static_assert(t2 == t3, "Tuple equality broken");
+    static_assert(t1 != t3, "Tuple equality broken");
+    static_assert(t1 < t3, "Tuple compare broken");
+}
+
 
 TEST_CASE("Lexiconographic ordering", "[compare]") {
     using tuplet::tuple;
