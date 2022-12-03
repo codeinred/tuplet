@@ -94,7 +94,7 @@ namespace tuplet::sfinae::detail {
 namespace tuplet::sfinae {
     /// Implement assignment but preserve default assignment
     template <class A, class B>
-    using other_than = std::enable_if_t<!std::is_same_v<A&, B>>;
+    using other_than = std::enable_if_t<!std::is_same_v<std::decay_t<A>, std::decay_t<B>>>;
 } // namespace tuplet::sfinae
 
 
@@ -149,7 +149,7 @@ namespace tuplet {
 
     template <class T, class U>
     concept other_than = !
-    std::is_same_v<T, U&>;
+    std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
 
     template <class Tuple>
     concept base_list_tuple = requires() {

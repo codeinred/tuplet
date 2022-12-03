@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <tuplet/tuple.hpp>
+#include <memory>
 
 using tuplet::tuple;
 using namespace tuplet::literals;

@@ -2,6 +2,7 @@
 #include <tuple>
 #include <tuplet/tuple.hpp>
 #include <vector>
+#include <memory>
 
 TEST_CASE("Test handling of tuples containing refs", "[core]") {
     int a = 0;
