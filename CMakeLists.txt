@@ -107,7 +107,7 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         Catch2
         https://github.com/catchorg/catch2.git
         devel
-        3.0.0)
+        v3.2.0)
     FetchContent_MakeAvailable(${remote_dependencies})
 
     add_executable(

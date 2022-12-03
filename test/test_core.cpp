@@ -1,8 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_version_macros.hpp>
 #include <tuple>
 #include <tuplet/tuple.hpp>
 #include <vector>
 #include <memory>
+
+static_assert(CATCH_VERSION_MAJOR >= 3);
+static_assert(CATCH_VERSION_MINOR >= 2);
 
 TEST_CASE("Test handling of tuples containing refs", "[core]") {
     int a = 0;
