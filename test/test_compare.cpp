@@ -34,7 +34,7 @@ TEST_CASE("Lexiconographic ordering", "[compare]") {
 
 TEST_CASE("Lexiconographic ordering", "[compare-str]") {
     using tuplet::tuple;
-    using std::string_view_literals::operator""sv;
+    using namespace std::string_view_literals;
 
     static_assert(tuplet::sfinae::detail::
                       _has_compare_with<std::string_view, std::string_view>(0));

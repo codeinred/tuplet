@@ -4,7 +4,7 @@
 #include <tuplet/tuple.hpp>
 
 using tuplet::tuple;
-using tuplet::literals::operator""_tag;
+using namespace tuplet::literals;
 
 static_assert(
     std::is_same_v<decltype(tuplet::tuple_cat()), tuple<>>,

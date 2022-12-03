@@ -145,7 +145,7 @@ struct alignas(Alignment) aligned_buffer<0, Alignment> {
     aligned_buffer() {}
 };
 
-TEST_CASE("Check alignment") {
+TEST_CASE("Check alignment", "[alignment]") {
     using buff40_64_a = aligned_buffer_aggregate<40, 64>;
     using buff10_16_a = aligned_buffer_aggregate<10, 16>;
     using buff15_32_a = aligned_buffer_aggregate<15, 32>;
