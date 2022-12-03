@@ -149,7 +149,7 @@ namespace tuplet {
 
     template <class T, class U>
     concept other_than = !
-    std::is_same_v<T&, U>;
+    std::is_same_v<T, U&>;
 
     template <class Tuple>
     concept base_list_tuple = requires() {
@@ -544,7 +544,9 @@ namespace tuplet {
         constexpr auto operator==(tuple const& other) const {
             return detail::_equals(*this, other, base_list {});
         }
-        constexpr auto operator!=(tuple const& other) const { return !(*this == other); }
+        constexpr auto operator!=(tuple const& other) const {
+            return !(*this == other);
+        }
         constexpr auto operator<(tuple const& other) const {
             return detail::_less(*this, other, base_list {});
         }
