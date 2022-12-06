@@ -20,13 +20,6 @@
     }
 
 
-#if __cpp_concepts
-#define TUPLET_OTHER_THAN(Self, Other) tuplet::other_than<Self> Other
-#else
-#define TUPLET_OTHER_THAN(Self, Other)                                         \
-    class Other, class = ::tuplet::sfinae::other_than<Self, Other>
-#endif
-
 #if __cpp_impl_three_way_comparison && __cpp_lib_three_way_comparison          \
     && !defined(TUPLET_DEFAULTED_COMPARISON)
 #define TUPLET_DEFAULTED_COMPARISON 1
@@ -36,11 +29,24 @@
 #endif
 
 #if __cpp_concepts
+#define TUPLET_OTHER_THAN(Self, Other) tuplet::other_than<Self> Other
 #define TUPLET_WEAK_CONCEPT(...) __VA_ARGS__
 #define TUPLET_WEAK_REQUIRES(...) requires __VA_ARGS__
+#define _TUPLET_TYPES_EQ_WITH(T, U)                                            \
+    bool                                                                       \
+        requires(::tuplet::equality_comparable_with<T, U> && ...)
+#define _TUPLET_TYPES_CMP_WITH(T, U)                                           \
+    bool                                                                       \
+        requires(::tuplet::equality_comparable_with<T, U> && ...)
 #else
+#define TUPLET_OTHER_THAN(Self, Other)                                         \
+    class Other, class = ::tuplet::sfinae::other_than<Self, Other>
 #define TUPLET_WEAK_CONCEPT(...) class
 #define TUPLET_WEAK_REQUIRES(...)
+#define _TUPLET_TYPES_EQ_WITH(T, U)                                            \
+    ::std::enable_if_t<(::tuplet::sfinae::detail::_has_eq<T, U> && ...), bool>
+#define _TUPLET_TYPES_CMP_WITH(T, U)                                           \
+    ::std::enable_if_t<(::tuplet::sfinae::detail::_has_cmp<T, U> && ...), bool>
 #endif
 
 #if (__has_cpp_attribute(no_unique_address))
@@ -64,11 +70,63 @@
 
 
 
+////////////////////////////////////////
+////  tuplet::type_list Definition  ////
+////////////////////////////////////////
+
+namespace tuplet {
+    /// Represents a list of types
+    template <class... T>
+    struct type_list {};
+
+    /// Convinience + operator for catenating type lists
+    template <class... Ls, class... Rs>
+    constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
+        return type_list<Ls..., Rs...> {};
+    }
+} // namespace tuplet
+
+
+
+
+
 /////////////////////////////////////////////
 ////  SFINAE, Concepts, and Type Traits  ////
 /////////////////////////////////////////////
 
 namespace tuplet::sfinae::detail {
+    template <
+        class T,
+        class U,
+        class = decltype(std::declval<T>() == std::declval<U>())>
+    constexpr bool _test_eq(int) {
+        return true;
+    }
+
+    template <class T, class U>
+    constexpr bool _test_eq(long long) {
+        return false;
+    }
+
+    template <
+        class T,
+        class U,
+        class = decltype(std::declval<T>() < std::declval<U>())>
+    constexpr bool _test_less(int) {
+        return true;
+    }
+
+    template <class T, class U>
+    constexpr bool _test_less(long long) {
+        return false;
+    }
+
+    template <class T, class U>
+    constexpr bool _has_eq = _test_eq<T, U>(0);
+
+    template <class T, class U = T>
+    constexpr bool _has_cmp = _test_eq<T, U>(0) && _test_less<T, U>(0);
+
     template <class Tup, class = typename Tup::base_list>
     constexpr bool _has_base_list(int) {
         return true;
@@ -82,23 +140,26 @@ namespace tuplet::sfinae::detail {
         class A,
         class B,
         class = decltype(std::declval<A>().compare(std::declval<B>()))>
-    constexpr bool _has_compare_with(int) {
+    constexpr bool _test_m_compare(int) {
         return true;
     }
 
     template <class, class>
-    constexpr bool _has_compare_with(long long) {
+    constexpr bool _test_m_compare(long long) {
         return false;
     }
 } // namespace tuplet::sfinae::detail
+
+
 namespace tuplet::sfinae {
     /// Implement assignment but preserve default assignment
     template <class A, class B>
-    using other_than = std::enable_if_t<!std::is_same_v<std::decay_t<A>, std::decay_t<B>>>;
+    using other_than = std::enable_if_t<
+        !std::is_same_v<std::decay_t<A>, std::decay_t<B>>>;
 } // namespace tuplet::sfinae
 
 
-// tuplet concepts and traits
+
 namespace tuplet {
     template <class T>
     struct unwrap_reference {
@@ -178,6 +239,24 @@ namespace tuplet {
     concept equality_comparable = requires(T const& t) {
                                       { t == t } -> same_as<bool>;
                                   };
+
+    template <class T, class U>
+    concept equality_comparable_with = requires(T const& t, U const& u) {
+                                           { t == u } -> same_as<bool>;
+                                       };
+
+    template <class T>
+    concept partial_comparable = equality_comparable<T>
+                              && requires(T const& t) {
+                                     { t < t } -> same_as<bool>;
+                                 };
+    template <class T, class U>
+    concept partial_comparable_with = equality_comparable_with<T, U>
+                                   && requires(T const& t, U const& u) {
+                                          { t < u } -> same_as<bool>;
+                                          { t > u } -> same_as<bool>;
+                                      };
+
 #endif
 
     template <class Tuple>
@@ -197,25 +276,12 @@ namespace tuplet {
 ////  tuplet::detail: Comparison Operator Helpers  ////
 ///////////////////////////////////////////////////////
 
-namespace tuplet {
-    /// Represents a list of types
-    template <class... T>
-    struct type_list {};
-
-    /// Convinience + operator for catenating type lists
-    template <class... Ls, class... Rs>
-    constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
-        return type_list<Ls..., Rs...> {};
-    }
-} // namespace tuplet
-
-
 namespace tuplet::detail {
     /// Computes a partial comparison. Returns true iff a == b. Otherwise,
     /// sets less to true if a < b
     template <class T, class U>
     constexpr bool _partial_cmp(T const& a, U const& b, bool& less) {
-        if constexpr (::tuplet::sfinae::detail::_has_compare_with<T, U>(0)) {
+        if constexpr (::tuplet::sfinae::detail::_test_m_compare<T, U>(0)) {
             int cmp = a.compare(b);
 
             if (cmp < 0) {
@@ -250,42 +316,64 @@ namespace tuplet::detail {
         }
     }
 
-    template <class Tup, class... Bases>
+    template <class Tup, class... B1>
     constexpr inline bool _equals(
         Tup const& t1,
         Tup const& t2,
-        type_list<Bases...>) {
-        return (
-            (t1.identity_t<Bases>::value == t2.identity_t<Bases>::value)
-            && ...);
+        type_list<B1...>) {
+#ifdef _MSC_VER
+        return [&](auto&... v1) -> bool {
+            return [&](auto&... v2) -> bool {
+                return ((v1 == v2) && ...);
+            }(t2.identity_t<B1>::value...);
+        }(t1.identity_t<B1>::value...);
+#else
+        return ((t1.identity_t<B1>::value == t2.identity_t<B1>::value) && ...);
+#endif
     }
 
-    template <class Tup, class... Bases>
+    template <class Tup, class... B1>
     constexpr inline bool _less(
         Tup const& t1,
         Tup const& t2,
-        type_list<Bases...>) {
+        type_list<B1...>) {
         bool is_less = false;
+#ifdef _MSC_VER
+        [&](auto&... v1) -> bool {
+            return [&](auto&... v2) -> bool {
+                return (_partial_cmp(v1, v2, is_less) && ...);
+            }(t2.identity_t<B1>::value...);
+        }(t1.identity_t<B1>::value...);
+#else
         (_partial_cmp(
-             t1.identity_t<Bases>::value,
-             t2.identity_t<Bases>::value,
+             t1.identity_t<B1>::value,
+             t2.identity_t<B1>::value,
              is_less)
          && ...);
+#endif
         return is_less;
     }
 
-    template <class Tup, class... Bases>
+    template <class Tup, class... B1>
     constexpr inline bool _less_eq(
         Tup const& t1,
         Tup const& t2,
-        type_list<Bases...>) {
+        type_list<B1...>) {
         bool is_less = false;
+#ifdef _MSC_VER
+        bool is_eq = [&](auto&... v1) -> bool {
+            return [&](auto&... v2) -> bool {
+                return (_partial_cmp(v1, v2, is_less) && ...);
+            }(t2.identity_t<B1>::value...);
+        }(t1.identity_t<B1>::value...);
+#else
         bool is_eq =
             (_partial_cmp(
-                 t1.identity_t<Bases>::value,
-                 t2.identity_t<Bases>::value,
+                 t1.identity_t<B1>::value,
+                 t2.identity_t<B1>::value,
                  is_less)
              && ... && true);
+#endif
         return is_less || is_eq;
     }
 
@@ -296,7 +384,15 @@ namespace tuplet::detail {
         Tup2 const& t2,
         type_list<B1...>,
         type_list<B2...>) {
+#ifdef _MSC_VER
+        return [&](auto&... v1) -> bool {
+            return [&](auto&... v2) -> bool {
+                return ((v1 == v2) && ...);
+            }(t2.identity_t<B2>::value...);
+        }(t1.identity_t<B1>::value...);
+#else
         return ((t1.identity_t<B1>::value == t2.identity_t<B2>::value) && ...);
+#endif
     }
 
     template <class Tup1, class Tup2, class... B1, class... B2>
@@ -306,11 +402,19 @@ namespace tuplet::detail {
         type_list<B1...>,
         type_list<B2...>) {
         bool is_less = false;
+#ifdef _MSC_VER
+        [&](auto&... v1) -> bool {
+            return [&](auto&... v2) -> bool {
+                return (_partial_cmp(v1, v2, is_less) && ...);
+            }(t2.identity_t<B2>::value...);
+        }(t1.identity_t<B1>::value...);
+#else
         (_partial_cmp(
              t1.identity_t<B1>::value,
              t2.identity_t<B2>::value,
              is_less)
          && ... && true);
+#endif
         return is_less;
     }
 
@@ -321,12 +425,20 @@ namespace tuplet::detail {
         type_list<B1...>,
         type_list<B2...>) {
         bool is_less = false;
+#ifdef _MSC_VER
+        bool is_eq = [&](auto&... v1) -> bool {
+            return [&](auto&... v2) -> bool {
+                return (_partial_cmp(v1, v2, is_less) && ...);
+            }(t2.identity_t<B2>::value...);
+        }(t1.identity_t<B1>::value...);
+#else
         bool is_eq =
             (_partial_cmp(
                  t1.identity_t<B1>::value,
                  t2.identity_t<B2>::value,
                  is_less)
              && ... && true);
+#endif
         return is_less || is_eq;
     }
 } // namespace tuplet::detail
@@ -468,14 +580,26 @@ namespace tuplet::detail {
 
     template <class Tup, class F, class... B>
     constexpr bool _any(Tup&& tup, F&& func, type_list<B...>) {
+#ifdef _MSC_VER
+        return [&](auto&&... v1) -> bool {
+            return (bool(func(static_cast<decltype(v1)&&>(v1))) || ...);
+        }(static_cast<Tup&&>(tup).identity_t<B>::value...);
+#else
         return (
             bool(func(static_cast<Tup&&>(tup).identity_t<B>::value)) || ...);
+#endif
     }
 
     template <class Tup, class F, class... B>
     constexpr bool _all(Tup&& tup, F&& func, type_list<B...>) {
+#ifdef _MSC_VER
+        return [&](auto&&... v1) -> bool {
+            return (bool(func(static_cast<decltype(v1)&&>(v1))) && ...);
+        }(static_cast<Tup&&>(tup).identity_t<B>::value...);
+#else
         return (
             bool(func(static_cast<Tup&&>(tup).identity_t<B>::value)) && ...);
+#endif
     }
 
     template <class Tup, class F, class... B>
@@ -561,7 +685,8 @@ namespace tuplet {
         }
 #endif
         template <class... U>
-        constexpr auto operator==(tuple<U...> const& other) const {
+        constexpr auto operator==(tuple<U...> const& other) const
+            -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_equals(
                 *this,
@@ -570,11 +695,13 @@ namespace tuplet {
                 other_base_list {});
         }
         template <class... U>
-        constexpr auto operator!=(tuple<U...> const& other) const {
+        constexpr auto operator!=(tuple<U...> const& other) const
+            -> _TUPLET_TYPES_CMP_WITH(T, U) {
             return !(*this == other);
         }
         template <class... U>
-        constexpr auto operator<(tuple<U...> const& other) const {
+        constexpr auto operator<(tuple<U...> const& other) const
+            -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_less(
                 *this,
@@ -583,7 +710,8 @@ namespace tuplet {
                 other_base_list {});
         }
         template <class... U>
-        constexpr auto operator<=(tuple<U...> const& other) const {
+        constexpr auto operator<=(tuple<U...> const& other) const
+            -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_less_eq(
                 *this,
@@ -592,7 +720,8 @@ namespace tuplet {
                 other_base_list {});
         }
         template <class... U>
-        constexpr auto operator>(tuple<U...> const& other) const {
+        constexpr auto operator>(tuple<U...> const& other) const
+            -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_less(
                 other,
@@ -601,7 +730,8 @@ namespace tuplet {
                 base_list {});
         }
         template <class... U>
-        constexpr auto operator>=(tuple<U...> const& other) const {
+        constexpr auto operator>=(tuple<U...> const& other) const
+            -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_less_eq(
                 other,
