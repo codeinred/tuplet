@@ -603,9 +603,8 @@ namespace tuplet::detail {
     }
 
     template <class Tup, class F, class... B>
-    constexpr auto _map(Tup&& tup, F&& func, type_list<B...>)
-        -> tuple<unwrap_ref_decay_t<
-            decltype(func(static_cast<Tup&&>(tup).identity_t<B>::value))>...> {
+    constexpr auto _map(Tup&& tup, F&& func, type_list<B...>) -> tuple<
+        decltype(func(static_cast<Tup&&>(tup).identity_t<B>::value))...> {
         return {func(static_cast<Tup&&>(tup).identity_t<B>::value)...};
     }
 
