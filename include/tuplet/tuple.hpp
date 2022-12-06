@@ -686,7 +686,7 @@ namespace tuplet {
 #endif
         template <class... U>
         constexpr auto operator==(tuple<U...> const& other) const
-            -> _TUPLET_TYPES_CMP_WITH(T, U) {
+            -> _TUPLET_TYPES_EQ_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_equals(
                 *this,
@@ -696,7 +696,7 @@ namespace tuplet {
         }
         template <class... U>
         constexpr auto operator!=(tuple<U...> const& other) const
-            -> _TUPLET_TYPES_CMP_WITH(T, U) {
+            -> _TUPLET_TYPES_EQ_WITH(T, U) {
             return !(*this == other);
         }
         template <class... U>
