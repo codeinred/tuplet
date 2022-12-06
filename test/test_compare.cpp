@@ -50,7 +50,7 @@ TEST_CASE("Lexiconographic ordering", "[compare-str]") {
     using namespace std::string_view_literals;
 
     static_assert(tuplet::sfinae::detail::
-                      _has_compare_with<std::string_view, std::string_view>(0));
+                      _test_m_compare<std::string_view, std::string_view>(0));
 
     auto t1 = tuple {"0"sv, "0"sv};
     auto t2 = tuple {"0"sv, "00"sv};
@@ -158,4 +158,77 @@ SCENARIO("We have tuples created with references", "[compare]") {
             REQUIRE_FALSE(t2 > t1);
         }
     }
+}
+
+
+template <
+    class A,
+    class B,
+    class = decltype(std::declval<A>() == std::declval<B>())>
+constexpr bool _sfinae_test_eq(int) {
+    return true;
+}
+
+template <
+    class A,
+    class B,
+    class = decltype(std::declval<A>() < std::declval<B>())>
+constexpr bool _sfinae_test_less(int) {
+    return true;
+}
+
+template <class A, class B>
+constexpr bool _sfinae_test_eq(long long) {
+    return false;
+}
+
+template <class A, class B>
+constexpr bool _sfinae_test_less(long long) {
+    return false;
+}
+
+TEST_CASE("Tuple Comparison Supports SFINAE", "[compare][sfinae]") {
+    using tuplet::tuple;
+    using tuplet::type_list;
+    struct Uncomparable {};
+
+    auto t1 = tuple {1, 2, 3};
+    auto t2 = tuple {std::string {"Hello"}, 2, 3};
+    auto t3 = tuple {Uncomparable {}, 2, 3};
+
+    constexpr bool result = _sfinae_test_eq<decltype(t1), decltype(t2)>(0);
+
+    static_assert(tuplet::sfinae::detail::_test_eq<int, int>(0) == true);
+    static_assert(
+        tuplet::sfinae::detail::_test_eq<int, std::string>(0) == false);
+    static_assert(
+        tuplet::sfinae::detail::_test_eq<int, const char*>(0) == false);
+
+    static_assert(_sfinae_test_eq<tuple<int>, tuple<const char*>>(0) == false);
+
+    STATIC_REQUIRE(_sfinae_test_eq<decltype(t1), decltype(t1)>(0));
+    STATIC_REQUIRE(_sfinae_test_less<decltype(t1), decltype(t1)>(0));
+    STATIC_REQUIRE(_sfinae_test_eq<decltype(t2), decltype(t2)>(0));
+    STATIC_REQUIRE(_sfinae_test_less<decltype(t2), decltype(t2)>(0));
+
+    STATIC_REQUIRE_FALSE(_sfinae_test_eq<decltype(t1), int>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_less<decltype(t1), int>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_eq<int, decltype(t1)>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_less<int, decltype(t1)>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_eq<decltype(t1), decltype(t2)>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_less<decltype(t1), decltype(t2)>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_eq<decltype(t1), decltype(t3)>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_less<decltype(t1), decltype(t3)>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_eq<decltype(t3), decltype(t2)>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_less<decltype(t3), decltype(t2)>(0));
+
+    auto t_short = tuple {1};
+    auto t_long = tuple {1, 2};
+
+    STATIC_REQUIRE_FALSE(
+        _sfinae_test_less<decltype(t_short), decltype(t_long)>(0));
+
+
+    STATIC_REQUIRE_FALSE(_sfinae_test_eq<decltype(t1), int>(0));
+    STATIC_REQUIRE_FALSE(_sfinae_test_less<decltype(t1), int>(0));
 }

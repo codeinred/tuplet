@@ -1,5 +1,6 @@
 #include "util/reflection.hpp"
 #include <catch2/catch_test_macros.hpp>
+#include <cstdint>
 #include <fmt/format.h>
 #include <tuplet/tuple.hpp>
 
@@ -53,7 +54,7 @@ struct struct_with_empty {
     int c;
 };
 
-#if TUPLET_HAS_NO_UNIQUE_ADDRESS
+#if TUPLET_HAS_NO_UNIQUE_ADDRESS && !(defined _MSC_VER)
 static_assert(offsetof(struct_with_empty, b) == 0);
 static_assert(sizeof(struct_with_empty) == sizeof(int) * 2);
 
@@ -63,10 +64,18 @@ static_assert(
     offsetof(struct_with_empty, c) == sizeof(int) || is_cl_or_clang_cl);
 #endif
 
+template <class T>
+uintptr_t pointer_to_int(T const* pointer) {
+    uintptr_t dest {};
+    static_assert(sizeof(T const*) == sizeof(dest));
+    memcpy(&dest, &pointer, sizeof(T const*));
+    return dest;
+}
+
 template <typename Tuple>
 void test_tuple_alignment() {
     Tuple t;
-    const auto base_addr {reinterpret_cast<uintptr_t>(&t)};
+    const auto base_addr = pointer_to_int(&t);
     size_t offset {0}, index {0};
 
     INFO(fmt::format("{}", refl::name_of_type<Tuple>));
