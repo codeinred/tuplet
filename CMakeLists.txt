@@ -106,8 +106,8 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
     find_or_fetch(
         Catch2
         https://github.com/catchorg/catch2.git
-        devel
-        v3.2.0)
+        v3.2.0
+        3.2.0)
     FetchContent_MakeAvailable(${remote_dependencies})
 
     add_executable(
@@ -115,16 +115,11 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         bench/bench-heterogenous.cpp
         bench/bench-homogenous.cpp
         bench/bench-single-elem.cpp)
+
     file(GLOB test_files CONFIGURE_DEPENDS test/*.cpp)
     add_executable(test_tuplet ${test_files})
-    add_executable(test_tuplet_cpp_20 ${test_files})
     target_link_libraries(
         test_tuplet
-        tuplet::tuplet
-        fmt::fmt
-        Catch2::Catch2WithMain)
-    target_link_libraries(
-        test_tuplet_cpp_20
         tuplet::tuplet
         fmt::fmt
         Catch2::Catch2WithMain)
@@ -132,17 +127,30 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         bench
         tuplet::tuplet
         benchmark::benchmark_main)
-    target_compile_features(test_tuplet_cpp_20 PRIVATE cxx_std_20)
-    list(
-        APPEND
-        CMAKE_MODULE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib/cmake/Catch2)
-    list(
-        APPEND
-        CMAKE_MODULE_PATH
-        ${catch2_SOURCE_DIR}/extras)
     include(CTest)
     include(Catch)
     catch_discover_tests(test_tuplet)
-    catch_discover_tests(test_tuplet_cpp_20)
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.1)
+            add_executable(test_tuplet_cpp_20 ${test_files})
+            target_link_libraries(
+                test_tuplet_cpp_20
+                tuplet::tuplet
+                fmt::fmt
+                Catch2::Catch2WithMain)
+
+            target_compile_features(test_tuplet_cpp_20 PRIVATE cxx_std_20)
+            list(
+                APPEND
+                CMAKE_MODULE_PATH
+                ${CMAKE_INSTALL_PREFIX}/lib/cmake/Catch2)
+            list(
+                APPEND
+                CMAKE_MODULE_PATH
+                ${catch2_SOURCE_DIR}/extras)
+
+            catch_discover_tests(test_tuplet_cpp_20)
+        endif()
+    endif()
 endif()
