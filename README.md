@@ -14,11 +14,6 @@ aggregate containing it's elements, and this ensures that it's
 This results in better code generation by the compiler, allowing `tuplet::tuple`
 to be passed in registers, and to be serialized and deserialized via `memcpy`.
 
-What's more, the implementation of `tuplet::tuple` is less than one fifth the
-size of `std::tuple`, both in terms of lines, and in terms of kilobytes of code.
-`tuplet.hpp` clocks in at 300 odd lines, compared to 1724 lines for gcc 9's
-implementation of `std::tuple`.
-
 If you'd like a further discussion of how `tuplet::tuple` compares to
 `std::tuple` and why you should use it, see the [Motivation](#Motivation)
 section below!
@@ -161,9 +156,62 @@ auto print = [](auto&... args) {
 apply(print, tuplet::tuple{1, 2, "Hello, world!"});
 ```
 
+## Additional Features
+
+**tuplet** has been backported to C++17. Functions that were constrained with
+`requires` clauses will still be constrained in C++20, with sfinae being used
+where necessary if concepts are not availible.
+
+Tuplet remains trivially copyable and trivially movable, with no user-provided
+copy or move constructors.
+
+`tuplet::tuple` provides the following operations on the elements of a tuple:
+
+- `tuple.any(func)` - returns true if the function returns true for any of the
+  tuple's elements.
+- `tuplet.all(func)` - returns true if the function returns true for all of the
+  tuple's elements
+- `tuplet.map(func)` - returns a new tuple, whose elements consist of the values
+  returned by the function when it's applied to each element of the tuple
+  separately
+- `tuplet.for_each` - applies a function to each element in a tuple, discarding
+  the value
+
+These are bulk operations, and they'll compile significantly faster than lookup
+with `std::get` for large tuples.
+
+Additionally, tuplet now supports heterogenous comparisons - you can compare a
+`tuple<int>` with `tuple<int&>`, or with `tuple<long>`. This can be useful when
+writing test code.
+
+### Explicit arbitrary conversion with `tuplet::convert`
+
+You can use `tuplet::convert` to convert a tuplet to other arbitrary compatible
+types:
+
+```cpp
+struct my_struct {
+    int a;
+    double b;
+    std::string_view c;
+};
+
+auto tup = tuplet::tuple { 1, 0.3, "Hello world" };
+
+my_struct s = tuplet::convert { tup };
+```
+
+Any type that can be constructed with braced-initialization from the elements of
+a tuple is considered compatible. For tuples of appropriate types, this includes
+vectors, arrays, structs, and other class types.
+
+If the tuple is moved into `tuplet::convert`, then any values in the tuple will
+be moved into the created object.
+
 ## Installation
 
 ### CMake package
+
 Tuplet can now be installed as a CMake package!
 
 ```bash
@@ -224,9 +272,12 @@ target_link_libraries(main PRIVATE tuplet::tuplet)
 ```
 
 ### Conan package
-You can install `tuplet` using the [Conan](https://conan.io/) package manager.  
-Add `tuplet/1.2.2` to your `conanfile.txt`'s `require` clause.  
-This way you can integrate `tuplet` with any [build system](https://docs.conan.io/en/latest/reference/generators.html) Conan supports.
+
+You can install `tuplet` using the [Conan](https://conan.io/) package manager.
+Add `tuplet/1.2.2` to your `conanfile.txt`'s `require` clause. This way you can
+integrate `tuplet` with any
+[build system](https://docs.conan.io/en/latest/reference/generators.html) Conan
+supports.
 
 ## Motivation
 
@@ -310,9 +361,9 @@ this problem.
 ## Benchmarks
 
 The compiler is signifigantly better at optimizing memory-intensive operations
-on `tuplet::tuple` when compared to `std::tuple`, with a measured speedup of
-2x when copying vectors of 256 elements, and a speedup up 2.25x for vectors of
-512 elements containing homogenous tuples (tuples where all types are identical,
+on `tuplet::tuple` when compared to `std::tuple`, with a measured speedup of 2x
+when copying vectors of 256 elements, and a speedup up 2.25x for vectors of 512
+elements containing homogenous tuples (tuples where all types are identical,
 test size 8 bytes per element).
 
 ![tuplet-bench-vector-copy-i9900k.png](.github/assets/tuplet-bench-vector-copy-i9900k.png)
@@ -335,7 +386,9 @@ This can't be done for `std::tuple`, however, because `std::tuple` isn't an
 aggregate type, and isn't trivially copyable.
 
 To run the benchmarks on your local machine, simply clone and build the project
-with a compiler that supports C++20:
+with a compiler that supports either C++17 or C++20. It's been tested on GCC 7
+and above, and on Visual Studio 16.1.2 and above (this corresponds to `_MSC_VER`
+1921):
 
 ```bash
 git clone https://github.com/codeinred/tuplet.git
