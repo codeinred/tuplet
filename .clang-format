@@ -76,7 +76,7 @@ IncludeCategories:
   - Regex:           '.*'
     Priority:        1
     SortPriority:    0
-TypenameMacros: ['TUPLET_CONCEPT']
+TypenameMacros: ['TUPLET_CONCEPT', '_TUPLET_TYPES_EQ_WITH', '_TUPLET_TYPES_CMP_WITH']
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentCaseLabels: true
