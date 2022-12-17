@@ -649,7 +649,11 @@ namespace tuplet {
             return *this;
         }
 
+#if defined(__clang__) // Workaround to clang crashes with nested tuples
+        template <class... U>
+#else
         template <TUPLET_WEAK_CONCEPT(assignable_to<T>)... U>
+#endif
         constexpr auto& assign(U&&... values) {
             _assign(base_list {}, static_cast<U&&>(values)...);
             return *this;

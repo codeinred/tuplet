@@ -91,3 +91,13 @@ TEST_CASE("Assignment to empty tuple", "[assign]") {
     // Checks that self-assignment compiles
     empty_tuple = empty_tuple;
 }
+
+TEST_CASE("Check assignment of tuple with nested tuples", "[assign]") {
+    tuplet::tuple<int, tuplet::tuple<double>, tuplet::tuple<int>> t;
+
+    t.assign(1, tuplet::make_tuple(2.0), tuplet::make_tuple(3));
+
+    REQUIRE(t[0_tag] == 1);
+    REQUIRE(t[1_tag][0_tag] == 2.0);
+    REQUIRE(t[2_tag][0_tag] == 3);
+}
