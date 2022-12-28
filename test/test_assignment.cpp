@@ -92,7 +92,15 @@ TEST_CASE("Assignment to empty tuple", "[assign]") {
     empty_tuple = empty_tuple;
 }
 
-TEST_CASE("Check assignment of tuple with nested tuples", "[assign]") {
+TEST_CASE("Check assignment of tuple with nested tuples 1", "[assign]") {
+    tuplet::tuple<int, tuplet::tuple<int>> t;
+
+    t.assign(1, tuplet::make_tuple(2));
+
+    REQUIRE(t == tuplet::tuple {1, tuplet::tuple {2}});
+}
+
+TEST_CASE("Check assignment of tuple with nested tuples 2", "[assign]") {
     tuplet::tuple<int, tuplet::tuple<double>, tuplet::tuple<int>> t;
 
     t.assign(1, tuplet::make_tuple(2.0), tuplet::make_tuple(3));
