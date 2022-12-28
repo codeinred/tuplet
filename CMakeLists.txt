@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 
 project(
     "tuplet"
-    VERSION 2.0.0
+    VERSION 2.0.1
     DESCRIPTION "A Lightweight Tuple Implementation for Modern C++"
     HOMEPAGE_URL "https://github.com/codeinred/tuplet/"
     LANGUAGES CXX)
