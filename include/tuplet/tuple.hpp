@@ -613,6 +613,11 @@ namespace tuplet::detail {
         return static_cast<F&&>(f)(
             static_cast<Tup&&>(t).identity_t<B>::value...);
     }
+
+    template <class U, class Tup, class... B>
+    constexpr U _convert(Tup&& t, type_list<B...>) {
+        return U {static_cast<Tup&&>(t).identity_t<B>::value...};
+    }
 } // namespace tuplet::detail
 
 
@@ -837,6 +842,48 @@ namespace tuplet {
         }
 
 
+        template <class... U>
+        constexpr explicit operator tuplet::tuple<U...>() & {
+            static_assert(
+                sizeof...(U) == N,
+                "Can only convert to tuples with the same number of items");
+            return detail::_convert<tuplet::tuple<U...>>(*this, base_list {});
+        }
+        template <class... U>
+        constexpr explicit operator tuplet::tuple<U...>() const& {
+            static_assert(
+                sizeof...(U) == N,
+                "Can only convert to tuples with the same number of items");
+            return detail::_convert<tuplet::tuple<U...>>(*this, base_list {});
+        }
+        template <class... U>
+        constexpr explicit operator tuplet::tuple<U...>() && {
+            static_assert(
+                sizeof...(U) == N,
+                "Can only convert to tuples with the same number of items");
+            return detail::_convert<tuplet::tuple<U...>>(
+                static_cast<tuple&&>(*this),
+                base_list {});
+        }
+
+        /// Instantiate the given type using list initialization
+        template <class U>
+        constexpr U as() & {
+            return detail::_convert<U>(*this, base_list {});
+        }
+        /// Instantiate the given type using list initialization
+        template <class U>
+        constexpr U as() const& {
+            return detail::_convert<U>(*this, base_list {});
+        }
+        /// Instantiate the given type using list initialization
+        template <class U>
+        constexpr U as() && {
+            return detail::_convert<U>(
+                static_cast<tuple&&>(*this),
+                base_list {});
+        }
+
 
        private:
         template <class... B>
@@ -943,6 +990,11 @@ namespace tuplet {
         template <class F>
         constexpr decltype(auto) apply(F&& func) const noexcept {
             return func();
+        }
+
+        template <class U>
+        constexpr U as() const noexcept {
+            return U {};
         }
     };
     template <class... Ts>
@@ -1058,13 +1110,9 @@ namespace tuplet {
         Tuple tuple;
         template <class U>
         constexpr operator U() && {
-            return _convert<U>(base_list {});
-        }
-
-       private:
-        template <class U, class... Bases>
-        constexpr U _convert(type_list<Bases...>) {
-            return U {static_cast<Tuple&&>(tuple).identity_t<Bases>::value...};
+            return detail::_convert<U>(
+                static_cast<Tuple&&>(tuple),
+                base_list {});
         }
     };
     template <class Tuple>
