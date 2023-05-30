@@ -80,6 +80,19 @@ jobs:
             build_type: Debug
             install_compiler: ""
 
+          - name: windows-2019-MSVC-19.14
+            os: windows-2019
+            compiler: cl
+            flags: ""
+            build_type: Debug
+            install_compiler: 'echo "already installed"'
+            env:
+              CC: cl
+              CXX: cl
+              PreferredToolArchitecture: x64
+              VCToolsVersion: "14.14"
+
+
     steps:
     - uses: actions/checkout@v2
 
