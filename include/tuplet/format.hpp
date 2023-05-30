@@ -41,13 +41,13 @@ struct fmt::formatter<tuplet::tuple<T...>> {
         -> decltype(ctx.out()) {
         if constexpr (sizeof...(T) >= 1) {
             auto print_elems = [&](auto const& first, auto const&... rest) {
-                auto out = format_to(ctx.out(), "{}{}", open_char, first);
-                ((out = format_to(out, "{} {}", separator, rest)), ...);
-                return format_to(out, "{}", close_char);
+                auto out = fmt::format_to(ctx.out(), "{}{}", open_char, first);
+                ((out = fmt::format_to(out, "{} {}", separator, rest)), ...);
+                return fmt::format_to(out, "{}", close_char);
             };
             return tuplet::apply(print_elems, p);
         } else {
-            return format_to(ctx.out(), "{}{}", open_char, close_char);
+            return fmt::format_to(ctx.out(), "{}{}", open_char, close_char);
         }
     }
 };
