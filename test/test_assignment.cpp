@@ -5,6 +5,13 @@
 using namespace tuplet::literals;
 using tuplet::tuple;
 
+TEST_CASE("Check very simple assignment", "[assign]") {
+
+    int a = -1;
+    tuplet::tie(a) = tuplet::make_tuple(123);
+    REQUIRE(a == 123);
+}
+
 TEST_CASE("Check assignment with tuplet::tie", "[assign]") {
     int a = 0;
     int b = 0;

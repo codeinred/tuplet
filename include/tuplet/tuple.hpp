@@ -43,31 +43,59 @@
     class Other, class = ::tuplet::sfinae::other_than<Self, Other>
 #define TUPLET_WEAK_CONCEPT(...) class
 #define TUPLET_WEAK_REQUIRES(...)
+#if _MSC_VER < 1930
 #define _TUPLET_TYPES_EQ_WITH(T, U)                                            \
-    ::std::enable_if_t<(::tuplet::sfinae::detail::_has_eq<T, U> && ...), bool>
+    ::std::enable_if_t<                                                        \
+        ::tuplet::sfinae::detail::_all_true<                                   \
+            ::tuplet::sfinae::detail::_has_eq<T, U>...>(),                     \
+        bool>
 #define _TUPLET_TYPES_CMP_WITH(T, U)                                           \
-    ::std::enable_if_t<(::tuplet::sfinae::detail::_has_cmp<T, U> && ...), bool>
+    ::std::enable_if_t<                                                        \
+        ::tuplet::sfinae::detail::_all_true<                                   \
+            ::tuplet::sfinae::detail::_has_cmp<T, U>...>(),                    \
+        bool>
+#else
+#define _TUPLET_TYPES_EQ_WITH(T, U)                                            \
+    ::std::enable_if_t<((::tuplet::sfinae::detail::_has_eq<T, U>)&&...), bool>
+#define _TUPLET_TYPES_CMP_WITH(T, U)                                           \
+    ::std::enable_if_t<((::tuplet::sfinae::detail::_has_cmp<T, U>)&&...), bool>
+#endif
 #endif
 
-#if (__has_cpp_attribute(no_unique_address))
-#define TUPLET_HAS_NO_UNIQUE_ADDRESS 1
-#define TUPLET_NO_UNIQUE_ADDRESS [[no_unique_address]]
-#elif _MSVC_LANG >= 202002L                                                    \
-    && ((__has_cpp_attribute(msvc::no_unique_address))                         \
-        || ((defined _MSC_VER) && (!defined __clang__)))
-// Note __has_cpp_attribute(msvc::no_unique_address) itself doesn't work as
-// of 19.30.30709, even though the attribute itself is supported. See
-// https://github.com/llvm/llvm-project/issues/49358#issuecomment-981041089
+
+#if defined(TUPLET_NO_UNIQUE_ADDRESS) && !TUPLET_NO_UNIQUE_ADDRESS
+#define TUPLET_NO_UNIQUE_ADDRESS
+#else
+#if _MSVC_LANG >= 202002L && (!defined __clang__)
+
 #define TUPLET_HAS_NO_UNIQUE_ADDRESS 1
 #define TUPLET_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+
+#elif _MSC_VER
+// no_unique_address is not available (C++17)
+#define TUPLET_HAS_NO_UNIQUE_ADDRESS 0
+#define TUPLET_NO_UNIQUE_ADDRESS
+
+#elif __cplusplus > 201703L && (__has_cpp_attribute(no_unique_address))
+
+#define TUPLET_HAS_NO_UNIQUE_ADDRESS 1
+#define TUPLET_NO_UNIQUE_ADDRESS [[no_unique_address]]
+
 #else
 // no_unique_address is not available.
 #define TUPLET_HAS_NO_UNIQUE_ADDRESS 0
 #define TUPLET_NO_UNIQUE_ADDRESS
 #endif
+#endif
 
 
-
+#if _MSC_VER
+#define TUPLET_INLINE __forceinline
+#elif __GNUC__ || __clang__
+#define TUPLET_INLINE [[gnu::always_inline]]
+#else
+#define TUPLET_INLINE
+#endif
 
 
 ////////////////////////////////////////
@@ -135,6 +163,35 @@ namespace tuplet::sfinae::detail {
     constexpr bool _has_base_list(long long) {
         return false;
     }
+
+    template <bool... B>
+    constexpr bool _all_true() {
+        return (B && ...);
+    };
+
+    template <class... T, class... U>
+    constexpr bool _all_has_eq(type_list<T...>, type_list<U...>) {
+        bool values[] {_has_eq<T, U>...};
+        for (bool b : values) {
+            if (!b) {
+                return false;
+            }
+        }
+        return true;
+    }
+    template <class... T, class... U>
+    constexpr bool _all_has_cmp(type_list<T...>, type_list<U...>) {
+        bool values[] {_has_cmp<T, U>...};
+        for (bool b : values) {
+            if (!b) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    constexpr bool _all_has_eq(type_list<>, type_list<>) { return true; }
+    constexpr bool _all_has_cmp(type_list<>, type_list<>) { return true; }
 
     template <
         class A,
@@ -209,13 +266,12 @@ namespace tuplet {
     concept same_as = std::is_same_v<T, U> && std::is_same_v<U, T>;
 
     template <class T, class U>
-    concept other_than = !
-    std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
+    concept other_than = !std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
 
     template <class Tuple>
     concept base_list_tuple = requires() {
-                                  typename std::decay_t<Tuple>::base_list;
-                              };
+        typename std::decay_t<Tuple>::base_list;
+    };
 
     template <class T>
     concept stateless = std::is_empty_v<std::decay_t<T>>;
@@ -228,22 +284,22 @@ namespace tuplet {
 
     template <class T>
     concept ordered = requires(T const& t) {
-                          { t <=> t };
-                      };
+        { t <=> t };
+    };
 
     template <class T, class U>
     concept ordered_with = requires(T const& t, U const& u) {
-                               { t <=> u };
-                           };
+        { t <=> u };
+    };
     template <class T>
     concept equality_comparable = requires(T const& t) {
-                                      { t == t } -> same_as<bool>;
-                                  };
+        { t == t } -> same_as<bool>;
+    };
 
     template <class T, class U>
     concept equality_comparable_with = requires(T const& t, U const& u) {
-                                           { t == u } -> same_as<bool>;
-                                       };
+        { t == u } -> same_as<bool>;
+    };
 
     template <class T>
     concept partial_comparable = equality_comparable<T>
@@ -633,7 +689,12 @@ namespace tuplet {
     struct tuple : tuple_base_t<T...> {
         constexpr static size_t N = sizeof...(T);
         constexpr static bool
+#if _MSC_VER
+            nothrow_swappable = ::tuplet::sfinae::detail::_all_true<
+                std::is_nothrow_swappable_v<T>...>();
+#else
             nothrow_swappable = (std::is_nothrow_swappable_v<T> && ...);
+#endif
         using super = tuple_base_t<T...>;
         using super::operator[];
         using base_list = typename super::base_list;
@@ -641,7 +702,7 @@ namespace tuplet {
         using super::decl_elem;
 
         template <TUPLET_OTHER_THAN(tuple, U)> // Preserves default assignments
-        constexpr auto& operator=(U&& tup) {
+        TUPLET_INLINE constexpr auto& operator=(U&& tup) {
             using tuple2 = std::decay_t<U>;
             if constexpr (base_list_tuple_v<tuple2>) {
                 _assign_tup(
@@ -887,25 +948,32 @@ namespace tuplet {
 
        private:
         template <class... B>
-        constexpr void _swap(tuple& other, type_list<B...>) noexcept(
-            nothrow_swappable) {
+        TUPLET_INLINE constexpr void _swap(
+            tuple& other,
+            type_list<B...>) noexcept(nothrow_swappable) {
             using std::swap;
             (swap(B::value, other.identity_t<B>::value), ...);
         }
 
         template <class U, class... B1, class... B2>
-        constexpr void _assign_tup(U&& u, type_list<B1...>, type_list<B2...>) {
+        TUPLET_INLINE constexpr void _assign_tup(
+            U&& u,
+            type_list<B1...>,
+            type_list<B2...>) {
             // See:
             // https://developercommunity.visualstudio.com/t/fold-expressions-unreliable-in-171-with-c20/1676476
-            (void(B1::value = static_cast<U&&>(u).identity_t<B2>::value), ...);
+
+            (void(B1::value = static_cast<B2&&>(u).value), ...);
         }
         template <class U, size_t... I>
-        constexpr void _assign_index_tup(U&& u, std::index_sequence<I...>) {
+        TUPLET_INLINE constexpr void _assign_index_tup(
+            U&& u,
+            std::index_sequence<I...>) {
             using std::get;
             (void(tuple_elem<I, T>::value = get<I>(static_cast<U&&>(u))), ...);
         }
         template <class... U, class... B>
-        constexpr void _assign(type_list<B...>, U&&... u) {
+        TUPLET_INLINE constexpr void _assign(type_list<B...>, U&&... u) {
             (void(B::value = static_cast<U&&>(u)), ...);
         }
     };
@@ -1144,7 +1212,7 @@ namespace tuplet {
     }
 
     template <class... T>
-    constexpr tuple<T&...> tie(T&... t) {
+    TUPLET_INLINE constexpr tuple<T&...> tie(T&... t) {
         return {t...};
     }
 
@@ -1183,7 +1251,7 @@ namespace tuplet {
     }
 
     template <typename... Ts>
-    constexpr auto make_tuple(Ts&&... args) {
+    TUPLET_INLINE constexpr auto make_tuple(Ts&&... args) {
         return tuple<unwrap_ref_decay_t<Ts>...> {static_cast<Ts&&>(args)...};
     }
 
