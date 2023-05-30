@@ -73,6 +73,13 @@ jobs:
             build_type: Debug
             install_compiler: ""
 
+          - name: windows-2019-cl
+            os: windows-2019
+            compiler: cl
+            flags: ""
+            build_type: Debug
+            install_compiler: ""
+
     steps:
     - uses: actions/checkout@v2
 
