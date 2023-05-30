@@ -131,26 +131,26 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
     include(Catch)
     catch_discover_tests(test_tuplet)
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.1)
-            add_executable(test_tuplet_cpp_20 ${test_files})
-            target_link_libraries(
-                test_tuplet_cpp_20
-                tuplet::tuplet
-                fmt::fmt
-                Catch2::Catch2WithMain)
+    if(cxx_std_20 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+        add_executable(test_tuplet_cpp_20 ${test_files})
+        target_link_libraries(
+            test_tuplet_cpp_20
+            tuplet::tuplet
+            fmt::fmt
+            Catch2::Catch2WithMain)
 
-            target_compile_features(test_tuplet_cpp_20 PRIVATE cxx_std_20)
-            list(
-                APPEND
-                CMAKE_MODULE_PATH
-                ${CMAKE_INSTALL_PREFIX}/lib/cmake/Catch2)
-            list(
-                APPEND
-                CMAKE_MODULE_PATH
-                ${catch2_SOURCE_DIR}/extras)
+        target_compile_features(test_tuplet_cpp_20 PRIVATE cxx_std_20)
+        list(
+            APPEND
+            CMAKE_MODULE_PATH
+            ${CMAKE_INSTALL_PREFIX}/lib/cmake/Catch2)
+        list(
+            APPEND
+            CMAKE_MODULE_PATH
+            ${catch2_SOURCE_DIR}/extras)
 
-            catch_discover_tests(test_tuplet_cpp_20)
-        endif()
+        catch_discover_tests(
+            test_tuplet_cpp_20
+            TEST_SUFFIX " (cpp 20)")
     endif()
 endif()
