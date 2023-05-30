@@ -1,9 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_version_macros.hpp>
+#include <memory>
 #include <tuple>
 #include <tuplet/tuple.hpp>
 #include <vector>
-#include <memory>
 
 static_assert(CATCH_VERSION_MAJOR >= 3);
 static_assert(CATCH_VERSION_MINOR >= 0);
@@ -106,4 +106,47 @@ TEST_CASE("Empty tuple", "[core][empty]") {
 
     // Checks that self-assignment compiles
     empty_tuple = empty_tuple;
+}
+
+
+TEST_CASE("Swap tuples", "[core][swap]") {
+    auto t1 = std::make_tuple(10, 20, std::string("Hello"));
+    auto t2 = std::make_tuple(
+        5,
+        -129837,
+        std::string("The quick brown fox jumps over the lazy dogs"));
+
+    REQUIRE(std::get<0>(t1) == 10);
+    REQUIRE(std::get<1>(t1) == 20);
+    REQUIRE(std::get<2>(t1) == "Hello");
+
+    REQUIRE(std::get<0>(t2) == 5);
+    REQUIRE(std::get<1>(t2) == -129837);
+    REQUIRE(
+        std::get<2>(t2)
+        == std::string("The quick brown fox jumps over the lazy dogs"));
+
+    t1.swap(t2);
+
+    REQUIRE(std::get<0>(t2) == 10);
+    REQUIRE(std::get<1>(t2) == 20);
+    REQUIRE(std::get<2>(t2) == "Hello");
+
+    REQUIRE(std::get<0>(t1) == 5);
+    REQUIRE(std::get<1>(t1) == -129837);
+    REQUIRE(
+        std::get<2>(t1)
+        == std::string("The quick brown fox jumps over the lazy dogs"));
+
+    swap(t1, t2);
+
+    REQUIRE(std::get<0>(t1) == 10);
+    REQUIRE(std::get<1>(t1) == 20);
+    REQUIRE(std::get<2>(t1) == "Hello");
+
+    REQUIRE(std::get<0>(t2) == 5);
+    REQUIRE(std::get<1>(t2) == -129837);
+    REQUIRE(
+        std::get<2>(t2)
+        == std::string("The quick brown fox jumps over the lazy dogs"));
 }

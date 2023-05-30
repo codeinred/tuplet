@@ -20,6 +20,29 @@
     }
 
 
+
+#if _MSC_VER
+/// Looks up a member in a tuple via the base class, and forwards it
+#define TUPLET_FWD_M(TupleType, BaseType, tup, value)                          \
+    static_cast<::tuplet::forward_as_t<TupleType&&, BaseType>>(tup).value
+/// Gets a member in a tuple via the base class
+#define TUPLET_GET_M(BaseType, tup, value)                                     \
+    tup.::tuplet::identity_t<BaseType>::value
+#elif __clang__
+/// Looks up a member in a tuple via the base class, and forwards it
+#define TUPLET_FWD_M(TupleType, BaseType, tup, value)                          \
+    static_cast<TupleType&&>(tup).::tuplet::identity_t<BaseType>::value
+#define TUPLET_GET_M(BaseType, tup, value)                                     \
+    tup.::tuplet::identity_t<BaseType>::value
+#else
+/// Looks up a member in a tuple via the base class, and forwards it
+#define TUPLET_FWD_M(TupleType, BaseType, tup, value)                          \
+    static_cast<TupleType&&>(tup).BaseType::value
+#define TUPLET_GET_M(BaseType, tup, value) tup.BaseType::value
+#endif
+
+
+
 #if __cpp_impl_three_way_comparison && __cpp_lib_three_way_comparison          \
     && !defined(TUPLET_DEFAULTED_COMPARISON)
 #define TUPLET_DEFAULTED_COMPARISON 1
@@ -217,6 +240,35 @@ namespace tuplet::sfinae {
 
 
 
+namespace tuplet::detail {
+    template <class Tup, class B>
+    struct _forward_as {
+        using type = B&&;
+    };
+
+    template <class Tup, class B>
+    struct _forward_as<Tup&, B> {
+        using type = B&;
+    };
+
+    template <class Tup, class B>
+    struct _forward_as<Tup&&, B> {
+        using type = B&&;
+    };
+
+    template <class Tup, class B>
+    struct _forward_as<Tup const&, B> {
+        using type = B const&;
+    };
+
+    template <class Tup, class B>
+    struct _forward_as<Tup const&&, B> {
+        using type = B const&&;
+    };
+} // namespace tuplet::detail
+
+
+
 namespace tuplet {
     template <class T>
     struct unwrap_reference {
@@ -235,6 +287,12 @@ namespace tuplet {
 
     template <class T>
     using identity_t = T;
+
+
+    /// Takes a type B, and gives it the same "rvalue" status as Tup
+    /// Used for forwarding values out of a tuple
+    template <class Tup, class B>
+    using forward_as_t = typename ::tuplet::detail::_forward_as<Tup, B>::type;
 
     template <class First, class...>
     using first_t = First;
@@ -381,10 +439,12 @@ namespace tuplet::detail {
         return [&](auto&... v1) -> bool {
             return [&](auto&... v2) -> bool {
                 return ((v1 == v2) && ...);
-            }(t2.identity_t<B1>::value...);
-        }(t1.identity_t<B1>::value...);
+            }(TUPLET_GET_M(B1, t2, value)...);
+        }(TUPLET_GET_M(B1, t1, value)...);
 #else
-        return ((t1.identity_t<B1>::value == t2.identity_t<B1>::value) && ...);
+        return (
+            (TUPLET_GET_M(B1, t1, value) == TUPLET_GET_M(B1, t2, value))
+            && ...);
 #endif
     }
 
@@ -398,12 +458,12 @@ namespace tuplet::detail {
         [&](auto&... v1) -> bool {
             return [&](auto&... v2) -> bool {
                 return (_partial_cmp(v1, v2, is_less) && ...);
-            }(t2.identity_t<B1>::value...);
-        }(t1.identity_t<B1>::value...);
+            }(TUPLET_GET_M(B1, t2, value)...);
+        }(TUPLET_GET_M(B1, t1, value)...);
 #else
         (_partial_cmp(
-             t1.identity_t<B1>::value,
-             t2.identity_t<B1>::value,
+             TUPLET_GET_M(B1, t1, value),
+             TUPLET_GET_M(B1, t2, value),
              is_less)
          && ...);
 #endif
@@ -420,13 +480,13 @@ namespace tuplet::detail {
         bool is_eq = [&](auto&... v1) -> bool {
             return [&](auto&... v2) -> bool {
                 return (_partial_cmp(v1, v2, is_less) && ...);
-            }(t2.identity_t<B1>::value...);
-        }(t1.identity_t<B1>::value...);
+            }(TUPLET_GET_M(B1, t2, value)...);
+        }(TUPLET_GET_M(B1, t1, value)...);
 #else
         bool is_eq =
             (_partial_cmp(
-                 t1.identity_t<B1>::value,
-                 t2.identity_t<B1>::value,
+                 TUPLET_GET_M(B1, t1, value),
+                 TUPLET_GET_M(B1, t2, value),
                  is_less)
              && ... && true);
 #endif
@@ -444,10 +504,12 @@ namespace tuplet::detail {
         return [&](auto&... v1) -> bool {
             return [&](auto&... v2) -> bool {
                 return ((v1 == v2) && ...);
-            }(t2.identity_t<B2>::value...);
-        }(t1.identity_t<B1>::value...);
+            }(TUPLET_GET_M(B2, t2, value)...);
+        }(TUPLET_GET_M(B1, t1, value)...);
 #else
-        return ((t1.identity_t<B1>::value == t2.identity_t<B2>::value) && ...);
+        return (
+            (TUPLET_GET_M(B1, t1, value) == TUPLET_GET_M(B2, t2, value))
+            && ...);
 #endif
     }
 
@@ -462,12 +524,12 @@ namespace tuplet::detail {
         [&](auto&... v1) -> bool {
             return [&](auto&... v2) -> bool {
                 return (_partial_cmp(v1, v2, is_less) && ...);
-            }(t2.identity_t<B2>::value...);
-        }(t1.identity_t<B1>::value...);
+            }(TUPLET_GET_M(B2, t2, value)...);
+        }(TUPLET_GET_M(B1, t1, value)...);
 #else
         (_partial_cmp(
-             t1.identity_t<B1>::value,
-             t2.identity_t<B2>::value,
+             TUPLET_GET_M(B1, t1, value),
+             TUPLET_GET_M(B2, t2, value),
              is_less)
          && ... && true);
 #endif
@@ -485,13 +547,13 @@ namespace tuplet::detail {
         bool is_eq = [&](auto&... v1) -> bool {
             return [&](auto&... v2) -> bool {
                 return (_partial_cmp(v1, v2, is_less) && ...);
-            }(t2.identity_t<B2>::value...);
-        }(t1.identity_t<B1>::value...);
+            }(TUPLET_GET_M(B2, t2, value)...);
+        }(TUPLET_GET_M(B1, t1, value)...);
 #else
         bool is_eq =
             (_partial_cmp(
-                 t1.identity_t<B1>::value,
-                 t2.identity_t<B2>::value,
+                 TUPLET_GET_M(B1, t1, value),
+                 TUPLET_GET_M(B2, t2, value),
                  is_less)
              && ... && true);
 #endif
@@ -631,7 +693,7 @@ namespace tuplet {
 namespace tuplet::detail {
     template <class Tup, class F, class... B>
     constexpr void _for_each(Tup&& tup, F&& func, type_list<B...>) {
-        (void(func(static_cast<Tup&&>(tup).identity_t<B>::value)), ...);
+        (void(func(TUPLET_FWD_M(Tup, B, tup, value))), ...);
     }
 
     template <class Tup, class F, class... B>
@@ -639,10 +701,9 @@ namespace tuplet::detail {
 #ifdef _MSC_VER
         return [&](auto&&... v1) -> bool {
             return (bool(func(static_cast<decltype(v1)&&>(v1))) || ...);
-        }(static_cast<Tup&&>(tup).identity_t<B>::value...);
+        }(TUPLET_FWD_M(Tup, B, tup, value)...);
 #else
-        return (
-            bool(func(static_cast<Tup&&>(tup).identity_t<B>::value)) || ...);
+        return (bool(func(TUPLET_FWD_M(Tup, B, tup, value))) || ...);
 #endif
     }
 
@@ -651,28 +712,26 @@ namespace tuplet::detail {
 #ifdef _MSC_VER
         return [&](auto&&... v1) -> bool {
             return (bool(func(static_cast<decltype(v1)&&>(v1))) && ...);
-        }(static_cast<Tup&&>(tup).identity_t<B>::value...);
+        }(TUPLET_FWD_M(Tup, B, tup, value)...);
 #else
-        return (
-            bool(func(static_cast<Tup&&>(tup).identity_t<B>::value)) && ...);
+        return (bool(func(TUPLET_FWD_M(Tup, B, tup, value))) && ...);
 #endif
     }
 
     template <class Tup, class F, class... B>
-    constexpr auto _map(Tup&& tup, F&& func, type_list<B...>) -> tuple<
-        decltype(func(static_cast<Tup&&>(tup).identity_t<B>::value))...> {
-        return {func(static_cast<Tup&&>(tup).identity_t<B>::value)...};
+    constexpr auto _map(Tup&& tup, F&& func, type_list<B...>)
+        -> tuple<decltype(func(TUPLET_FWD_M(Tup, B, tup, value)))...> {
+        return {func(TUPLET_FWD_M(Tup, B, tup, value))...};
     }
 
     template <class Tup, class F, class... B>
     constexpr decltype(auto) _apply(Tup&& t, F&& f, type_list<B...>) {
-        return static_cast<F&&>(f)(
-            static_cast<Tup&&>(t).identity_t<B>::value...);
+        return static_cast<F&&>(f)(TUPLET_FWD_M(Tup, B, t, value)...);
     }
 
     template <class U, class Tup, class... B>
     constexpr U _convert(Tup&& t, type_list<B...>) {
-        return U {static_cast<Tup&&>(t).identity_t<B>::value...};
+        return U {TUPLET_FWD_M(Tup, B, t, value)...};
     }
 } // namespace tuplet::detail
 
@@ -952,7 +1011,7 @@ namespace tuplet {
             tuple& other,
             type_list<B...>) noexcept(nothrow_swappable) {
             using std::swap;
-            (swap(B::value, other.identity_t<B>::value), ...);
+            (swap(B::value, TUPLET_GET_M(B, other, value)), ...);
         }
 
         template <class U, class... B1, class... B2>
@@ -963,7 +1022,7 @@ namespace tuplet {
             // See:
             // https://developercommunity.visualstudio.com/t/fold-expressions-unreliable-in-171-with-c20/1676476
 
-            (void(B1::value = static_cast<B2&&>(u).value), ...);
+            (void(B1::value = TUPLET_FWD_M(U, B2, u, value)), ...);
         }
         template <class U, size_t... I>
         TUPLET_INLINE constexpr void _assign_index_tup(
@@ -1288,8 +1347,11 @@ namespace tuplet::detail {
     template <class T, class... Outer, class... Inner>
     constexpr auto _tuple_cat(T tup, type_list<Outer...>, type_list<Inner...>)
         -> tuple<type_t<Inner>...> {
-        return {static_cast<type_t<Outer>&&>(tup.identity_t<Outer>::value)
-                    .identity_t<Inner>::value...};
+        return {TUPLET_FWD_M(
+            type_t<Outer>,
+            Inner,
+            TUPLET_GET_M(Outer, tup, value),
+            value)...};
     }
 } // namespace tuplet::detail
 
