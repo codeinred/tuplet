@@ -13,8 +13,21 @@
 ////  Tuplet Preprocessor Definitions  ////
 ///////////////////////////////////////////
 
+#if TUPLET_NO_INLINE
+#define TUPLET_INLINE
+#else
+
+#if _MSC_VER
+#define TUPLET_INLINE __forceinline
+#elif __GNUC__ || __clang__
+#define TUPLET_INLINE [[gnu::always_inline]]
+#else
+#define TUPLET_INLINE
+#endif
+#endif
+
 #define _TUPLET_COMPARISON_OPERATOR_1(type, member, op)                        \
-    constexpr auto operator op(type const& other)                              \
+    TUPLET_INLINE constexpr auto operator op(type const& other)                \
         const noexcept(noexcept(member op other.member)) {                     \
         return member op other.member;                                         \
     }
@@ -112,15 +125,6 @@
 #endif
 
 
-#if _MSC_VER
-#define TUPLET_INLINE __forceinline
-#elif __GNUC__ || __clang__
-#define TUPLET_INLINE [[gnu::always_inline]]
-#else
-#define TUPLET_INLINE
-#endif
-
-
 ////////////////////////////////////////
 ////  tuplet::type_list Definition  ////
 ////////////////////////////////////////
@@ -132,7 +136,7 @@ namespace tuplet {
 
     /// Convinience + operator for catenating type lists
     template <class... Ls, class... Rs>
-    constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
+    TUPLET_INLINE constexpr auto operator+(type_list<Ls...>, type_list<Rs...>) {
         return type_list<Ls..., Rs...> {};
     }
 } // namespace tuplet
@@ -394,7 +398,10 @@ namespace tuplet::detail {
     /// Computes a partial comparison. Returns true iff a == b. Otherwise,
     /// sets less to true if a < b
     template <class T, class U>
-    constexpr bool _partial_cmp(T const& a, U const& b, bool& less) {
+    TUPLET_INLINE constexpr bool _partial_cmp(
+        T const& a,
+        U const& b,
+        bool& less) {
         if constexpr (::tuplet::sfinae::detail::_test_m_compare<T, U>(0)) {
             int cmp = a.compare(b);
 
@@ -431,7 +438,7 @@ namespace tuplet::detail {
     }
 
     template <class Tup, class... B1>
-    constexpr inline bool _equals(
+    TUPLET_INLINE constexpr bool _equals(
         Tup const& t1,
         Tup const& t2,
         type_list<B1...>) {
@@ -449,7 +456,7 @@ namespace tuplet::detail {
     }
 
     template <class Tup, class... B1>
-    constexpr inline bool _less(
+    TUPLET_INLINE constexpr bool _less(
         Tup const& t1,
         Tup const& t2,
         type_list<B1...>) {
@@ -471,7 +478,7 @@ namespace tuplet::detail {
     }
 
     template <class Tup, class... B1>
-    constexpr inline bool _less_eq(
+    TUPLET_INLINE constexpr bool _less_eq(
         Tup const& t1,
         Tup const& t2,
         type_list<B1...>) {
@@ -495,7 +502,7 @@ namespace tuplet::detail {
 
 
     template <class Tup1, class Tup2, class... B1, class... B2>
-    constexpr inline bool _equals(
+    TUPLET_INLINE constexpr bool _equals(
         Tup1 const& t1,
         Tup2 const& t2,
         type_list<B1...>,
@@ -514,7 +521,7 @@ namespace tuplet::detail {
     }
 
     template <class Tup1, class Tup2, class... B1, class... B2>
-    constexpr inline bool _less(
+    TUPLET_INLINE constexpr bool _less(
         Tup1 const& t1,
         Tup2 const& t2,
         type_list<B1...>,
@@ -537,7 +544,7 @@ namespace tuplet::detail {
     }
 
     template <class Tup1, class Tup2, class... B1, class... B2>
-    constexpr inline bool _less_eq(
+    TUPLET_INLINE constexpr bool _less_eq(
         Tup1 const& t1,
         Tup2 const& t2,
         type_list<B1...>,
@@ -577,25 +584,25 @@ namespace tuplet {
         using Bases::decl_elem...;
 
 #if TUPLET_DEFAULTED_COMPARISON
-        auto operator<=>(type_map const&) const = default;
-        bool operator==(type_map const&) const = default;
+        TUPLET_INLINE auto operator<=>(type_map const&) const = default;
+        TUPLET_INLINE bool operator==(type_map const&) const = default;
 #else
-        constexpr auto operator==(type_map const& other) const {
+        TUPLET_INLINE constexpr auto operator==(type_map const& other) const {
             return detail::_equals(*this, other, base_list {});
         }
-        constexpr auto operator!=(type_map const& other) const {
+        TUPLET_INLINE constexpr auto operator!=(type_map const& other) const {
             return !(*this == other);
         }
-        constexpr auto operator<(type_map const& other) const {
+        TUPLET_INLINE constexpr auto operator<(type_map const& other) const {
             return detail::_less(*this, other, base_list {});
         }
-        constexpr auto operator<=(type_map const& other) const {
+        TUPLET_INLINE constexpr auto operator<=(type_map const& other) const {
             return detail::_less_eq(*this, other, base_list {});
         }
-        constexpr auto operator>(type_map const& other) const {
+        TUPLET_INLINE constexpr auto operator>(type_map const& other) const {
             return detail::_less(other, *this, base_list {});
         }
-        constexpr auto operator>=(type_map const& other) const {
+        TUPLET_INLINE constexpr auto operator>=(type_map const& other) const {
             return detail::_less_eq(other, *this, base_list {});
         }
 #endif
@@ -619,22 +626,26 @@ namespace tuplet {
 
         TUPLET_NO_UNIQUE_ADDRESS T value;
 
-        constexpr decltype(auto) operator[](tag<I>) & { return (value); }
-        constexpr decltype(auto) operator[](tag<I>) const& { return (value); }
-        constexpr decltype(auto) operator[](tag<I>) && {
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<I>) & {
+            return (value);
+        }
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<I>) const& {
+            return (value);
+        }
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<I>) && {
             return (static_cast<tuple_elem&&>(*this).value);
         }
 #if TUPLET_DEFAULTED_COMPARISON
-        auto operator<=>(tuple_elem const&) const = default;
-        bool operator==(tuple_elem const&) const = default;
+        TUPLET_INLINE auto operator<=>(tuple_elem const&) const = default;
+        TUPLET_INLINE bool operator==(tuple_elem const&) const = default;
         // Implements comparison for tuples containing reference types
-        constexpr auto operator<=>(tuple_elem const& other) const
+        TUPLET_INLINE constexpr auto operator<=>(tuple_elem const& other) const
             noexcept(noexcept(value <=> other.value))
             requires(std::is_reference_v<T> && ordered<T>)
         {
             return value <=> other.value;
         }
-        constexpr bool operator==(tuple_elem const& other) const
+        TUPLET_INLINE constexpr bool operator==(tuple_elem const& other) const
             noexcept(noexcept(value == other.value))
             requires(std::is_reference_v<T> && equality_comparable<T>)
         {
@@ -692,12 +703,15 @@ namespace tuplet {
 
 namespace tuplet::detail {
     template <class Tup, class F, class... B>
-    constexpr void _for_each(Tup&& tup, F&& func, type_list<B...>) {
+    TUPLET_INLINE constexpr void _for_each(
+        Tup&& tup,
+        F&& func,
+        type_list<B...>) {
         (void(func(TUPLET_FWD_M(Tup, B, tup, value))), ...);
     }
 
     template <class Tup, class F, class... B>
-    constexpr bool _any(Tup&& tup, F&& func, type_list<B...>) {
+    TUPLET_INLINE constexpr bool _any(Tup&& tup, F&& func, type_list<B...>) {
 #ifdef _MSC_VER
         return [&](auto&&... v1) -> bool {
             return (bool(func(static_cast<decltype(v1)&&>(v1))) || ...);
@@ -708,7 +722,7 @@ namespace tuplet::detail {
     }
 
     template <class Tup, class F, class... B>
-    constexpr bool _all(Tup&& tup, F&& func, type_list<B...>) {
+    TUPLET_INLINE constexpr bool _all(Tup&& tup, F&& func, type_list<B...>) {
 #ifdef _MSC_VER
         return [&](auto&&... v1) -> bool {
             return (bool(func(static_cast<decltype(v1)&&>(v1))) && ...);
@@ -719,18 +733,21 @@ namespace tuplet::detail {
     }
 
     template <class Tup, class F, class... B>
-    constexpr auto _map(Tup&& tup, F&& func, type_list<B...>)
+    TUPLET_INLINE constexpr auto _map(Tup&& tup, F&& func, type_list<B...>)
         -> tuple<decltype(func(TUPLET_FWD_M(Tup, B, tup, value)))...> {
         return {func(TUPLET_FWD_M(Tup, B, tup, value))...};
     }
 
     template <class Tup, class F, class... B>
-    constexpr decltype(auto) _apply(Tup&& t, F&& f, type_list<B...>) {
+    TUPLET_INLINE constexpr decltype(auto) _apply(
+        Tup&& t,
+        F&& f,
+        type_list<B...>) {
         return static_cast<F&&>(f)(TUPLET_FWD_M(Tup, B, t, value)...);
     }
 
     template <class U, class Tup, class... B>
-    constexpr U _convert(Tup&& t, type_list<B...>) {
+    TUPLET_INLINE constexpr U _convert(Tup&& t, type_list<B...>) {
         return U {TUPLET_FWD_M(Tup, B, t, value)...};
     }
 } // namespace tuplet::detail
@@ -782,35 +799,35 @@ namespace tuplet {
         }
 
 #if TUPLET_DEFAULTED_COMPARISON
-        auto operator<=>(tuple const&) const = default;
-        bool operator==(tuple const&) const = default;
-        bool operator!=(tuple const&) const = default;
-        bool operator<(tuple const&) const = default;
-        bool operator>(tuple const&) const = default;
-        bool operator<=(tuple const&) const = default;
-        bool operator>=(tuple const&) const = default;
+        TUPLET_INLINE auto operator<=>(tuple const&) const = default;
+        TUPLET_INLINE bool operator==(tuple const&) const = default;
+        TUPLET_INLINE bool operator!=(tuple const&) const = default;
+        TUPLET_INLINE bool operator<(tuple const&) const = default;
+        TUPLET_INLINE bool operator>(tuple const&) const = default;
+        TUPLET_INLINE bool operator<=(tuple const&) const = default;
+        TUPLET_INLINE bool operator>=(tuple const&) const = default;
 #else
-        constexpr auto operator==(tuple const& other) const {
+        TUPLET_INLINE constexpr auto operator==(tuple const& other) const {
             return detail::_equals(*this, other, base_list {});
         }
-        constexpr auto operator!=(tuple const& other) const {
+        TUPLET_INLINE constexpr auto operator!=(tuple const& other) const {
             return !(*this == other);
         }
-        constexpr auto operator<(tuple const& other) const {
+        TUPLET_INLINE constexpr auto operator<(tuple const& other) const {
             return detail::_less(*this, other, base_list {});
         }
-        constexpr auto operator<=(tuple const& other) const {
+        TUPLET_INLINE constexpr auto operator<=(tuple const& other) const {
             return detail::_less_eq(*this, other, base_list {});
         }
-        constexpr auto operator>(tuple const& other) const {
+        TUPLET_INLINE constexpr auto operator>(tuple const& other) const {
             return detail::_less(other, *this, base_list {});
         }
-        constexpr auto operator>=(tuple const& other) const {
+        TUPLET_INLINE constexpr auto operator>=(tuple const& other) const {
             return detail::_less_eq(other, *this, base_list {});
         }
 #endif
         template <class... U>
-        constexpr auto operator==(tuple<U...> const& other) const
+        TUPLET_INLINE constexpr auto operator==(tuple<U...> const& other) const
             -> _TUPLET_TYPES_EQ_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_equals(
@@ -820,12 +837,12 @@ namespace tuplet {
                 other_base_list {});
         }
         template <class... U>
-        constexpr auto operator!=(tuple<U...> const& other) const
+        TUPLET_INLINE constexpr auto operator!=(tuple<U...> const& other) const
             -> _TUPLET_TYPES_EQ_WITH(T, U) {
             return !(*this == other);
         }
         template <class... U>
-        constexpr auto operator<(tuple<U...> const& other) const
+        TUPLET_INLINE constexpr auto operator<(tuple<U...> const& other) const
             -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_less(
@@ -835,7 +852,7 @@ namespace tuplet {
                 other_base_list {});
         }
         template <class... U>
-        constexpr auto operator<=(tuple<U...> const& other) const
+        TUPLET_INLINE constexpr auto operator<=(tuple<U...> const& other) const
             -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_less_eq(
@@ -845,7 +862,7 @@ namespace tuplet {
                 other_base_list {});
         }
         template <class... U>
-        constexpr auto operator>(tuple<U...> const& other) const
+        TUPLET_INLINE constexpr auto operator>(tuple<U...> const& other) const
             -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_less(
@@ -855,7 +872,7 @@ namespace tuplet {
                 base_list {});
         }
         template <class... U>
-        constexpr auto operator>=(tuple<U...> const& other) const
+        TUPLET_INLINE constexpr auto operator>=(tuple<U...> const& other) const
             -> _TUPLET_TYPES_CMP_WITH(T, U) {
             using other_base_list = typename tuple<U...>::base_list;
             return detail::_less_eq(
@@ -865,7 +882,8 @@ namespace tuplet {
                 base_list {});
         }
 
-        constexpr void swap(tuple& other) noexcept(nothrow_swappable) {
+        TUPLET_INLINE constexpr void swap(tuple& other) noexcept(
+            nothrow_swappable) {
             _swap(other, base_list {});
         }
 
@@ -874,15 +892,15 @@ namespace tuplet {
         // 0, then element 1, then element 2, and so on, where element N is
         // identified by get<N>
         template <class F>
-        constexpr void for_each(F&& func) & {
+        TUPLET_INLINE constexpr void for_each(F&& func) & {
             detail::_for_each(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr void for_each(F&& func) const& {
+        TUPLET_INLINE constexpr void for_each(F&& func) const& {
             detail::_for_each(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr void for_each(F&& func) && {
+        TUPLET_INLINE constexpr void for_each(F&& func) && {
             detail::_for_each(
                 static_cast<tuple&&>(*this),
                 static_cast<F&&>(func),
@@ -893,15 +911,15 @@ namespace tuplet {
         // truthy value. Returns true if any application returned a truthy
         // value, and false otherwise
         template <class F>
-        constexpr bool any(F&& func) & {
+        TUPLET_INLINE constexpr bool any(F&& func) & {
             return detail::_any(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr bool any(F&& func) const& {
+        TUPLET_INLINE constexpr bool any(F&& func) const& {
             return detail::_any(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr bool any(F&& func) && {
+        TUPLET_INLINE constexpr bool any(F&& func) && {
             return detail::_any(
                 static_cast<tuple&&>(*this),
                 static_cast<F&&>(func),
@@ -912,15 +930,15 @@ namespace tuplet {
         // falsy value. Returns true if every application returned a truthy
         // value, and false otherwise
         template <class F>
-        constexpr bool all(F&& func) & {
+        TUPLET_INLINE constexpr bool all(F&& func) & {
             return detail::_all(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr bool all(F&& func) const& {
+        TUPLET_INLINE constexpr bool all(F&& func) const& {
             return detail::_all(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr bool all(F&& func) && {
+        TUPLET_INLINE constexpr bool all(F&& func) && {
             return detail::_all(
                 static_cast<tuple&&>(*this),
                 static_cast<F&&>(func),
@@ -930,15 +948,15 @@ namespace tuplet {
         // Map a function over every element in the tuple, using the values to
         // construct a new tuple
         template <class F>
-        constexpr auto map(F&& func) & {
+        TUPLET_INLINE constexpr auto map(F&& func) & {
             return detail::_map(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr auto map(F&& func) const& {
+        TUPLET_INLINE constexpr auto map(F&& func) const& {
             return detail::_map(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr auto map(F&& func) && {
+        TUPLET_INLINE constexpr auto map(F&& func) && {
             return detail::_map(
                 static_cast<tuple&&>(*this),
                 static_cast<F&&>(func),
@@ -946,15 +964,15 @@ namespace tuplet {
         }
 
         template <class F>
-        constexpr decltype(auto) apply(F&& func) & {
+        TUPLET_INLINE constexpr decltype(auto) apply(F&& func) & {
             return detail::_apply(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr decltype(auto) apply(F&& func) const& {
+        TUPLET_INLINE constexpr decltype(auto) apply(F&& func) const& {
             return detail::_apply(*this, static_cast<F&&>(func), base_list {});
         }
         template <class F>
-        constexpr decltype(auto) apply(F&& func) && {
+        TUPLET_INLINE constexpr decltype(auto) apply(F&& func) && {
             return detail::_apply(
                 static_cast<tuple&&>(*this),
                 static_cast<F&&>(func),
@@ -988,17 +1006,17 @@ namespace tuplet {
 
         /// Instantiate the given type using list initialization
         template <class U>
-        constexpr U as() & {
+        TUPLET_INLINE constexpr U as() & {
             return detail::_convert<U>(*this, base_list {});
         }
         /// Instantiate the given type using list initialization
         template <class U>
-        constexpr U as() const& {
+        TUPLET_INLINE constexpr U as() const& {
             return detail::_convert<U>(*this, base_list {});
         }
         /// Instantiate the given type using list initialization
         template <class U>
-        constexpr U as() && {
+        TUPLET_INLINE constexpr U as() && {
             return detail::_convert<U>(
                 static_cast<tuple&&>(*this),
                 base_list {});
@@ -1066,15 +1084,15 @@ namespace tuplet {
         constexpr void swap(tuple) noexcept {}
         constexpr auto& assign() noexcept { return *this; }
 #if TUPLET_DEFAULTED_COMPARISON
-        auto operator<=>(tuple const&) const = default;
-        bool operator==(tuple const&) const = default;
+        TUPLET_INLINE auto operator<=>(tuple const&) const = default;
+        TUPLET_INLINE bool operator==(tuple const&) const = default;
 #else
-        constexpr bool operator==(tuple const&) const noexcept { return true; }
-        constexpr bool operator<=(tuple const&) const noexcept { return true; }
-        constexpr bool operator>=(tuple const&) const noexcept { return true; }
-        constexpr bool operator!=(tuple const&) const noexcept { return false; }
-        constexpr bool operator<(tuple const&) const noexcept { return false; }
-        constexpr bool operator>(tuple const&) const noexcept { return false; }
+        TUPLET_INLINE constexpr bool operator==(tuple const&) const noexcept { return true; }
+        TUPLET_INLINE constexpr bool operator<=(tuple const&) const noexcept { return true; }
+        TUPLET_INLINE constexpr bool operator>=(tuple const&) const noexcept { return true; }
+        TUPLET_INLINE constexpr bool operator!=(tuple const&) const noexcept { return false; }
+        TUPLET_INLINE constexpr bool operator<(tuple const&) const noexcept { return false; }
+        TUPLET_INLINE constexpr bool operator>(tuple const&) const noexcept { return false; }
 #endif
         // Applies a function to every element of the tuple. The order is the
         // declaration order, so first the function will be applied to element
@@ -1146,18 +1164,26 @@ namespace tuplet {
         TUPLET_NO_UNIQUE_ADDRESS First first;
         TUPLET_NO_UNIQUE_ADDRESS Second second;
 
-        constexpr decltype(auto) operator[](tag<0>) & { return (first); }
-        constexpr decltype(auto) operator[](tag<0>) const& { return (first); }
-        constexpr decltype(auto) operator[](tag<0>) && {
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<0>) & {
+            return (first);
+        }
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<0>) const& {
+            return (first);
+        }
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<0>) && {
             return (static_cast<pair&&>(*this).first);
         }
-        constexpr decltype(auto) operator[](tag<1>) & { return (second); }
-        constexpr decltype(auto) operator[](tag<1>) const& { return (second); }
-        constexpr decltype(auto) operator[](tag<1>) && {
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<1>) & {
+            return (second);
+        }
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<1>) const& {
+            return (second);
+        }
+        TUPLET_INLINE constexpr decltype(auto) operator[](tag<1>) && {
             return (static_cast<pair&&>(*this).second);
         }
 
-        void swap(pair& other) noexcept(nothrow_swappable) {
+        TUPLET_INLINE void swap(pair& other) noexcept(nothrow_swappable) {
             using std::swap;
             swap(first, other.first);
             swap(second, other.second);
@@ -1165,7 +1191,7 @@ namespace tuplet {
 
         template <
             TUPLET_OTHER_THAN(pair, Type)> // Preserves default assignments
-        constexpr auto& operator=(Type&& tup) {
+        TUPLET_INLINE constexpr auto& operator=(Type&& tup) {
             auto&& [a, b] = static_cast<Type&&>(tup);
             first = static_cast<decltype(a)&&>(a);
             second = static_cast<decltype(b)&&>(b);
@@ -1175,7 +1201,7 @@ namespace tuplet {
         template <
             TUPLET_WEAK_CONCEPT(assignable_to<First>) F2,
             TUPLET_WEAK_CONCEPT(assignable_to<Second>) S2>
-        constexpr auto& assign(F2&& f, S2&& s) {
+        TUPLET_INLINE constexpr auto& assign(F2&& f, S2&& s) {
             first = static_cast<F2&&>(f);
             second = static_cast<S2&&>(s);
             return *this;
@@ -1185,31 +1211,31 @@ namespace tuplet {
         auto operator<=>(pair const&) const = default;
         bool operator==(pair const&) const = default;
 #else
-        constexpr bool operator==(pair const& other) const {
+        TUPLET_INLINE constexpr bool operator==(pair const& other) const {
             return first == other.first && second == other.second;
         }
-        constexpr bool operator!=(pair const& other) const {
+        TUPLET_INLINE constexpr bool operator!=(pair const& other) const {
             return !(*this == other);
         }
-        constexpr bool operator<(pair const& other) const {
+        TUPLET_INLINE constexpr bool operator<(pair const& other) const {
             bool result = false;
             detail::_partial_cmp(first, other.first, result)
                 && detail::_partial_cmp(second, other.second, result);
             return result;
         }
-        constexpr bool operator<=(pair const& other) const {
+        TUPLET_INLINE constexpr bool operator<=(pair const& other) const {
             bool result = false;
             bool is_eq = detail::_partial_cmp(first, other.first, result)
                       && detail::_partial_cmp(second, other.second, result);
             return result || is_eq;
         }
-        constexpr bool operator>(pair const& other) const {
+        TUPLET_INLINE constexpr bool operator>(pair const& other) const {
             bool result = false;
             detail::_partial_cmp(other.first, first, result)
                 && detail::_partial_cmp(other.second, second, result);
             return result;
         }
-        constexpr bool operator>=(pair const& other) const {
+        TUPLET_INLINE constexpr bool operator>=(pair const& other) const {
             bool result = false;
             bool is_eq = detail::_partial_cmp(other.first, first, result)
                       && detail::_partial_cmp(other.second, second, result);
@@ -1266,7 +1292,7 @@ namespace tuplet {
 // tuplet::forward_as_tuple
 namespace tuplet {
     template <size_t I, TUPLET_WEAK_CONCEPT(indexable) Tup>
-    constexpr decltype(auto) get(Tup&& tup) {
+    TUPLET_INLINE constexpr decltype(auto) get(Tup&& tup) {
         return static_cast<Tup&&>(tup)[tag<I>()];
     }
 
@@ -1276,35 +1302,41 @@ namespace tuplet {
     }
 
     template <class F, TUPLET_WEAK_CONCEPT(base_list_tuple) Tup>
-    constexpr decltype(auto) apply(F&& func, Tup&& tup) {
+    TUPLET_INLINE constexpr decltype(auto) apply(F&& func, Tup&& tup) {
         return detail::_apply(
             static_cast<Tup&&>(tup),
             static_cast<F&&>(func),
             typename std::decay_t<Tup>::base_list {});
     }
     template <class F, class A, class B>
-    constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>& pair) {
+    TUPLET_INLINE constexpr decltype(auto) apply(
+        F&& func,
+        tuplet::pair<A, B>& pair) {
         return static_cast<F&&>(func)(pair.first, pair.second);
     }
     template <class F, class A, class B>
-    constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B> const& pair) {
+    TUPLET_INLINE constexpr decltype(auto) apply(
+        F&& func,
+        tuplet::pair<A, B> const& pair) {
         return static_cast<F&&>(func)(pair.first, pair.second);
     }
     template <class F, class A, class B>
-    constexpr decltype(auto) apply(F&& func, tuplet::pair<A, B>&& pair) {
+    TUPLET_INLINE constexpr decltype(auto) apply(
+        F&& func,
+        tuplet::pair<A, B>&& pair) {
         using P = tuplet::pair<A, B>&&;
         return static_cast<F&&>(
             func)(static_cast<P>(pair).first, static_cast<P>(pair).second);
     }
 
     template <class... T>
-    void swap(tuple<T...>& a, tuple<T...>& b) noexcept(
+    TUPLET_INLINE void swap(tuple<T...>& a, tuple<T...>& b) noexcept(
         tuple<T...>::nothrow_swappable) {
         a.swap(b);
     }
 
     template <class A, class B>
-    void swap(pair<A, B>& a, pair<A, B>& b) noexcept(
+    TUPLET_INLINE void swap(pair<A, B>& a, pair<A, B>& b) noexcept(
         pair<A, B>::nothrow_swappable) {
         a.swap(b);
     }
@@ -1315,7 +1347,7 @@ namespace tuplet {
     }
 
     template <typename... T>
-    constexpr auto forward_as_tuple(T&&... a) noexcept {
+    TUPLET_INLINE constexpr auto forward_as_tuple(T&&... a) noexcept {
         return tuple<T&&...> {static_cast<T&&>(a)...};
     }
 } // namespace tuplet
@@ -1330,23 +1362,25 @@ namespace tuplet {
 
 namespace tuplet::detail {
     template <class T, class... Q>
-    constexpr auto _repeat_type(type_list<Q...>) {
+    TUPLET_INLINE constexpr auto _repeat_type(type_list<Q...>) {
         return type_list<first_t<T, Q>...> {};
     }
     template <class... Outer>
-    constexpr auto _get_outer_bases(type_list<Outer...>) {
+    TUPLET_INLINE constexpr auto _get_outer_bases(type_list<Outer...>) {
         return (_repeat_type<Outer>(base_list_t<type_t<Outer>> {}) + ...);
     }
     template <class... Outer>
-    constexpr auto _get_inner_bases(type_list<Outer...>) {
+    TUPLET_INLINE constexpr auto _get_inner_bases(type_list<Outer...>) {
         return (base_list_t<type_t<Outer>> {} + ...);
     }
 
     // This takes a forwarding tuple as a parameter. The forwarding tuple only
     // contains references, so it should just be taken by value.
     template <class T, class... Outer, class... Inner>
-    constexpr auto _tuple_cat(T tup, type_list<Outer...>, type_list<Inner...>)
-        -> tuple<type_t<Inner>...> {
+    TUPLET_INLINE constexpr auto _tuple_cat(
+        T tup,
+        type_list<Outer...>,
+        type_list<Inner...>) -> tuple<type_t<Inner>...> {
         return {TUPLET_FWD_M(
             type_t<Outer>,
             Inner,
