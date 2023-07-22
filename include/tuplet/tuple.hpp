@@ -325,23 +325,17 @@ namespace tuplet {
     template <class T>
     constexpr bool stateless_v = std::is_empty_v<std::decay_t<T>>;
 
-    // True if the type list contains unique types.
-    template <class T>
-    struct has_unique_types {
+    template <class T, class TList>
+    struct has_unique {
         static constexpr bool value = false;
     };
-    template <>
-    struct has_unique_types<type_list<>> {
-        static constexpr bool value = true;
-    };
     template <class T, class... Ts>
-    struct has_unique_types<type_list<T, Ts...>> {
-        static constexpr bool value = !(std::is_same_v<T, Ts> || ...)
-                                   && has_unique_types<type_list<Ts...>>::value;
+    struct has_unique<T, type_list<Ts...>> {
+        static constexpr bool value = (int(std::is_same_v<T, Ts>) + ...) == 1;
     };
 
-    template <class T>
-    constexpr bool has_unique_types_v = has_unique_types<T>::value;
+    template <class T, class Tup>
+    constexpr bool has_unique_v = has_unique<T, Tup>::value;
 
 #if __cpp_concepts
     template <class T, class U>
@@ -361,9 +355,9 @@ namespace tuplet {
     template <class T>
     concept indexable = stateless<T> || requires(T t) { t[tag<0>()]; };
 
-    template <class T>
-    concept type_indexable = stateless<T>
-                          || has_unique_types_v<element_list_t<T>>;
+    template <class Tup, class T>
+    concept type_indexable = stateless<Tup>
+                          || has_unique_v<T, element_list_t<Tup>>;
 
     template <class U, class T>
     concept assignable_to = requires(U u, T t) { t = u; };
@@ -1331,13 +1325,10 @@ namespace tuplet {
         return static_cast<Tup&&>(tup)[tag<I>()];
     }
 
-    template <class T, TUPLET_WEAK_CONCEPT(type_indexable) Tup>
+    template <class T, TUPLET_WEAK_CONCEPT(type_indexable<T>) Tup>
     TUPLET_INLINE constexpr decltype(auto) get(Tup&& tup) {
-        static_assert(
-            std::is_empty_v<std::decay_t<Tup>>
-                || has_unique_types_v<element_list_t<Tup>>,
-            "Duplicate types found in tuple.");
-
+        static_assert(has_unique_v<T, element_list_t<Tup>>,
+            "Type not found or found more than once in tuple.");
         return static_cast<Tup&&>(tup)[type_tag<T>()];
     }
 
