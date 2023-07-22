@@ -314,6 +314,8 @@ namespace tuplet {
     template <size_t N>
     using tag_range = std::make_index_sequence<N>;
 
+    template <class T>
+    struct type_tag {};
 
     template <class Tup>
     using base_list_t = typename std::decay_t<Tup>::base_list;
@@ -322,6 +324,24 @@ namespace tuplet {
 
     template <class T>
     constexpr bool stateless_v = std::is_empty_v<std::decay_t<T>>;
+
+    // True if the type list contains unique types.
+    template <class T>
+    struct has_unique_types {
+        static constexpr bool value = false;
+    };
+    template <>
+    struct has_unique_types<type_list<>> {
+        static constexpr bool value = true;
+    };
+    template <class T, class... Ts>
+    struct has_unique_types<type_list<T, Ts...>> {
+        static constexpr bool value = !(std::is_same_v<T, Ts> || ...)
+                                   && has_unique_types<type_list<Ts...>>::value;
+    };
+
+    template <class T>
+    constexpr bool has_unique_types_v = has_unique_types<T>::value;
 
 #if __cpp_concepts
     template <class T, class U>
@@ -340,6 +360,10 @@ namespace tuplet {
 
     template <class T>
     concept indexable = stateless<T> || requires(T t) { t[tag<0>()]; };
+
+    template <class T>
+    concept type_indexable = stateless<T>
+                          || has_unique_types_v<element_list_t<T>>;
 
     template <class U, class T>
     concept assignable_to = requires(U u, T t) { t = u; };
@@ -635,6 +659,17 @@ namespace tuplet {
         TUPLET_INLINE constexpr decltype(auto) operator[](tag<I>) && {
             return (static_cast<tuple_elem&&>(*this).value);
         }
+
+        TUPLET_INLINE constexpr decltype(auto) operator[](type_tag<T>) & {
+            return (value);
+        }
+        TUPLET_INLINE constexpr decltype(auto) operator[](type_tag<T>) const& {
+            return (value);
+        }
+        TUPLET_INLINE constexpr decltype(auto) operator[](type_tag<T>) && {
+            return (static_cast<tuple_elem&&>(*this).value);
+        }
+
 #if TUPLET_DEFAULTED_COMPARISON
         TUPLET_INLINE auto operator<=>(tuple_elem const&) const = default;
         TUPLET_INLINE bool operator==(tuple_elem const&) const = default;
@@ -1294,6 +1329,16 @@ namespace tuplet {
     template <size_t I, TUPLET_WEAK_CONCEPT(indexable) Tup>
     TUPLET_INLINE constexpr decltype(auto) get(Tup&& tup) {
         return static_cast<Tup&&>(tup)[tag<I>()];
+    }
+
+    template <class T, TUPLET_WEAK_CONCEPT(type_indexable) Tup>
+    TUPLET_INLINE constexpr decltype(auto) get(Tup&& tup) {
+        static_assert(
+            std::is_empty_v<std::decay_t<Tup>>
+                || has_unique_types_v<element_list_t<Tup>>,
+            "Duplicate types found in tuple.");
+
+        return static_cast<Tup&&>(tup)[type_tag<T>()];
     }
 
     template <class... T>

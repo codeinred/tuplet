@@ -8,6 +8,33 @@
 static_assert(CATCH_VERSION_MAJOR >= 3);
 static_assert(CATCH_VERSION_MINOR >= 0);
 
+
+TEST_CASE("Test get type for tuples containing unique types", "[core][get<T>]") {
+    auto t1 = tuplet::tuple<int, double, std::string> {10, .2, "Hello"};
+    auto t2 = tuplet::make_tuple(
+        short(5),
+        long(-129837),
+        std::string("The quick brown fox jumps over the lazy dogs"));
+
+    REQUIRE(tuplet::get<int>(t1) == 10);
+    REQUIRE(tuplet::get<double>(t1) == .2);
+    REQUIRE(tuplet::get<std::string>(t1) == "Hello");
+
+    REQUIRE(tuplet::get<int>(t1) == tuplet::get<0>(t1));
+    REQUIRE(tuplet::get<double>(t1) == tuplet::get<1>(t1));
+    REQUIRE(tuplet::get<std::string>(t1) == tuplet::get<2>(t1));
+
+    REQUIRE(tuplet::get<short>(t2) == 5);
+    REQUIRE(tuplet::get<long>(t2) == -129837);
+    REQUIRE(
+        tuplet::get<std::string>(t2)
+        == std::string("The quick brown fox jumps over the lazy dogs"));
+
+    REQUIRE(tuplet::get<short>(t2) == tuplet::get<0>(t2));
+    REQUIRE(tuplet::get<long>(t2) == tuplet::get<1>(t2));
+    REQUIRE(tuplet::get<std::string>(t2) == tuplet::get<2>(t2));
+}
+
 TEST_CASE("Test handling of tuples containing refs", "[core]") {
     int a = 0;
     int b = 0;
