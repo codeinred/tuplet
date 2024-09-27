@@ -12,7 +12,7 @@ struct fmt::formatter<tuplet::tuple<T...>> {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
         constexpr auto npos = std::string_view::npos;
         std::string_view view(ctx.begin(), ctx.end() - ctx.begin());
-        if (view.size() == 0) {
+        if (view.size() == 0 || (view.size() == 1 && view[0] == '}')) {
             return ctx.begin();
         } else if (view.size() == 3) {
             open_char = view[0];
